@@ -3,5 +3,4 @@
 *.asm
 *.zip
 *.sw[op]
-test.c
-test.out
+*.gch
