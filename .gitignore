@@ -1,0 +1,7 @@
+*.o
+*.out
+*.asm
+*.zip
+*.sw[op]
+test.c
+test.out
