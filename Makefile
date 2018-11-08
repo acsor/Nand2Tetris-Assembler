@@ -3,12 +3,13 @@ flags=-Wall
 
 
 .PHONY:	clear
+all: test.out
 
 
-test.out: test.c parser.o
+test.out: test.c tokenizer.o
 	$(cc) $(flags) -o test.out $^
 
-parser.o: parser.c parser.h
+tokenizer.o: tokenizer.c tokenizer.h
 	$(cc) $(flags) -c $^
 
 clear:

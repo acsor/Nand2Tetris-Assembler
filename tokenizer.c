@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "tokenizer.h"
 
 
 int asm_instr_to_bitstr(instr const in, char *const dest) {

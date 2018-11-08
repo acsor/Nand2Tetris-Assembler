@@ -1,5 +1,5 @@
-#ifndef PARSER_H
-#define	PARSER_H
+#ifndef TOKENIZER_H
+#define	TOKENIZER_H
 
 
 // TO-DO Employ a data type which has a width of two bytes cross-platform.

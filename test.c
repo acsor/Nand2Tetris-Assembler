@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "parser.h"
+#include "tokenizer.h"
 
 
 int test_asm_instr_to_bitstr(void *const args);
