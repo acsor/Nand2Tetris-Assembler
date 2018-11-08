@@ -4,3 +4,5 @@
 *.zip
 *.sw[op]
 *.gch
+Session.vim
+scratch.*
