@@ -7,23 +7,23 @@
 #define ERR_SIZE 256
 
 
-int test_asm_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
-int test_asm_instr_type(void *const args, char errmsg[], size_t maxwrite);
-int test_asm_strip(void *const args, char errmsg[], size_t maxwrite);
-int test_asm_composed_of(void *const args, char errmsg[], size_t maxwrite);
-int test_asm_decomment(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_instr_type(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_strip(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_composed_of(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_decomment(void *const args, char errmsg[], size_t maxwrite);
 
 typedef int (*test_function)(void*, char[], size_t);
 
 
 int main (int argc, char *argv[]) {
 	test_function tests[] = {
-		test_asm_instr_to_bitstr, test_asm_instr_type, test_asm_strip,
-		test_asm_composed_of, test_asm_decomment
+		test_n2t_instr_to_bitstr, test_n2t_instr_type, test_n2t_strip,
+		test_n2t_composed_of, test_n2t_decomment
 	};
 	char *test_names[] = {
-		"test_asm_instr_to_bitstr", "test_asm_instr_type", "test_asm_strip",
-		"test_asm_composed_of", "test_asm_decomment"
+		"test_n2t_instr_to_bitstr", "test_n2t_instr_type", "test_n2t_strip",
+		"test_n2t_composed_of", "test_n2t_decomment"
 	};
 	char errmsg[ERR_SIZE];
 	size_t i, tests_no = sizeof(tests) / sizeof(test_function);
@@ -42,7 +42,7 @@ int main (int argc, char *argv[]) {
 }
 
 
-int test_asm_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite) {
+int test_n2t_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite) {
 	instr inputs[] = {
 		{0}, {1}, {4}, {1 << 15}, {(1 << 15) - 1}
 	};
@@ -55,7 +55,7 @@ int test_asm_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite) {
 	size_t i, inputs_no = sizeof(inputs) / sizeof(instr);
 
 	for (i = 0; i < inputs_no; i++) {
-		asm_instr_to_bitstr(inputs[i], output);
+		n2t_instr_to_bitstr(inputs[i], output);
 
 		if (strncmp(exp_outputs[i], output, buffsize)) {
 			return 1;
@@ -65,7 +65,7 @@ int test_asm_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite) {
 	return 0;
 }
 
-int test_asm_instr_type(void *const args, char errmsg[], size_t maxwrite) {
+int test_n2t_instr_type(void *const args, char errmsg[], size_t maxwrite) {
 	instr inputs[] = {
 		{0}, {1}, {4}, {1 << 15}, {(1 << 15) - 1}
 	};
@@ -73,7 +73,7 @@ int test_asm_instr_type(void *const args, char errmsg[], size_t maxwrite) {
 	size_t i, inputs_no = sizeof(inputs) / sizeof(instr);
 
 	for (i = 0; i < inputs_no; i++) {
-		if (exp_outputs[i] != asm_instr_type(inputs[i])) {
+		if (exp_outputs[i] != n2t_instr_type(inputs[i])) {
 			return 1;
 		}
 	}
@@ -81,7 +81,7 @@ int test_asm_instr_type(void *const args, char errmsg[], size_t maxwrite) {
 	return 0;
 }
 
-int test_asm_strip(void *const args, char errmsg[], size_t maxwrite) {
+int test_n2t_strip(void *const args, char errmsg[], size_t maxwrite) {
 	char const *inputs[] = {
 		"abcdefghijkl", "           abcdefghijkl", "abcdefghijkl         ",
 		"     abcdefghijkl        ", "\tabcdefghijkl", "abcdefghijkl\t",
@@ -92,7 +92,7 @@ int test_asm_strip(void *const args, char errmsg[], size_t maxwrite) {
 	size_t i;
 
 	for (i = 0; i < sizeof(inputs) / sizeof(char*); i++) {
-		asm_strip(inputs[i], dest);
+		n2t_strip(inputs[i], dest);
 
 		if (strcmp(exp_output, dest)) {
 			snprintf(errmsg, maxwrite, "\"%s\" != \"%s\"", exp_output, dest);
@@ -103,7 +103,7 @@ int test_asm_strip(void *const args, char errmsg[], size_t maxwrite) {
 	return 0;
 }
 
-int test_asm_composed_of(void *const args, char errmsg[], size_t maxwrite) {
+int test_n2t_composed_of(void *const args, char errmsg[], size_t maxwrite) {
 	char const *inputs[] = {
 		"azbcyaxbzcyx", "abczwy", "01236789012346789", "004958aa",
 		"////?---___", "a//__--?"
@@ -117,7 +117,7 @@ int test_asm_composed_of(void *const args, char errmsg[], size_t maxwrite) {
 	size_t i;
 
 	for (i = 0; i < sizeof(inputs) / sizeof(char*); i++) {
-		if (asm_composed_of(inputs[i], charset_inputs[i]) != exp_outputs[i]) {
+		if (n2t_composed_of(inputs[i], charset_inputs[i]) != exp_outputs[i]) {
 			return 1;
 		}
 	}
@@ -125,7 +125,7 @@ int test_asm_composed_of(void *const args, char errmsg[], size_t maxwrite) {
 	return 0;
 }
 
-int test_asm_decomment(void *const args, char errmsg[], size_t maxwrite) {
+int test_n2t_decomment(void *const args, char errmsg[], size_t maxwrite) {
 	char const *inputs[] = {
 		"abcdef", "//abcdef", "abcdef   //ghijkl", "abcdef//ghijkl",
 		"//abcdef//ghijkl", "    //abcdef", "\t\t//abcdef"
@@ -138,7 +138,7 @@ int test_asm_decomment(void *const args, char errmsg[], size_t maxwrite) {
 	size_t i;
 
 	for (i = 0; i < sizeof(inputs) / sizeof(char*); i++) {
-		if (asm_decomment(inputs[i], buff)) {
+		if (n2t_decomment(inputs[i], buff)) {
 			return 1;
 		}
 

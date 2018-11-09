@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-int	asm_strip(char const *source, char *dest) {
+int	n2t_strip(char const *source, char *dest) {
 	size_t const source_len = strlen(source);
 	size_t lower = 0, upper = source_len;
 
@@ -18,7 +18,7 @@ int	asm_strip(char const *source, char *dest) {
 	return 0;
 }
 
-int	asm_decomment(char const *source, char *dest) {
+int	n2t_decomment(char const *source, char *dest) {
 	char *comment_begin;
 
 	// Shall we bound the number of characters written to dest?
@@ -32,7 +32,7 @@ int	asm_decomment(char const *source, char *dest) {
 	return 0;
 }
 
-int asm_composed_of(char const *s, char const *set) {
+int n2t_composed_of(char const *s, char const *set) {
 	size_t i;
 
 	for (i = 0; i < strlen(s); i++) {
@@ -44,19 +44,19 @@ int asm_composed_of(char const *s, char const *set) {
 	return 1;
 }
 
-int asm_is_whitespace(char const *s) {
-	return asm_composed_of(s, " \t\n\r\v");
+int n2t_is_whitespace(char const *s) {
+	return n2t_composed_of(s, " \t\n\r\v");
 }
 
-int asm_is_alpha(char const *source, char const *extra) {
+int n2t_is_alpha(char const *source, char const *extra) {
 	char charset[strlen(source) + strlen(extra) + 1];
 
 	strcpy(charset, source);
 	strcat(charset, extra);
 
-	return asm_composed_of(source, charset);
+	return n2t_composed_of(source, charset);
 }
 
-int	asm_is_numeric(char const *source) {
-	return asm_composed_of(source, "0123456789");
+int	n2t_is_numeric(char const *source) {
+	return n2t_composed_of(source, "0123456789");
 }

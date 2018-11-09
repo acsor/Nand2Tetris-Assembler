@@ -20,11 +20,11 @@ typedef enum {
  * Returns: the total number of characters written to `dest', `-1' if an error
  * occurred.
  */
-int asm_instr_to_bitstr(instr const in, char *const dest);
+int n2t_instr_to_bitstr(instr const in, char *const dest);
 /**
  * Returns: the instruction type associated with `in'.
  */
-instr_type asm_instr_type(instr const in);
+instr_type n2t_instr_type(instr const in);
 
 
 #endif
