@@ -26,7 +26,7 @@ int	asm_decomment(char const *source, char *dest) {
  	comment_begin = strstr(dest, "//");
 
 	if (comment_begin) {
-		dest[(int)(comment_begin - source)] = '\0';
+		dest[(unsigned long int)(comment_begin - dest)] = '\0';
 	}
 
 	return 0;

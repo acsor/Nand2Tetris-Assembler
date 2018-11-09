@@ -14,7 +14,8 @@
 int	asm_strip(char const *source, char *dest);
 /**
  * Strips away any single-line comments from `source', storing its altered form
- * to `dest'.
+ * to `dest'. It is assumed that `dest' has as much (or more) storage as
+ * `source' does.
  *
  * Returns: `1' if an error occurred, `0' otherwise.
  */

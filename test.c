@@ -11,7 +11,7 @@ int test_asm_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
 int test_asm_instr_type(void *const args, char errmsg[], size_t maxwrite);
 int test_asm_strip(void *const args, char errmsg[], size_t maxwrite);
 int test_asm_composed_of(void *const args, char errmsg[], size_t maxwrite);
-// TO-DO Add test_asm_decomment()
+int test_asm_decomment(void *const args, char errmsg[], size_t maxwrite);
 
 typedef int (*test_function)(void*, char[], size_t);
 
@@ -19,11 +19,11 @@ typedef int (*test_function)(void*, char[], size_t);
 int main (int argc, char *argv[]) {
 	test_function tests[] = {
 		test_asm_instr_to_bitstr, test_asm_instr_type, test_asm_strip,
-		test_asm_composed_of
+		test_asm_composed_of, test_asm_decomment
 	};
 	char *test_names[] = {
 		"test_asm_instr_to_bitstr", "test_asm_instr_type", "test_asm_strip",
-		"test_asm_composed_of"
+		"test_asm_composed_of", "test_asm_decomment"
 	};
 	char errmsg[ERR_SIZE];
 	size_t i, tests_no = sizeof(tests) / sizeof(test_function);
@@ -118,6 +118,31 @@ int test_asm_composed_of(void *const args, char errmsg[], size_t maxwrite) {
 
 	for (i = 0; i < sizeof(inputs) / sizeof(char*); i++) {
 		if (asm_composed_of(inputs[i], charset_inputs[i]) != exp_outputs[i]) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int test_asm_decomment(void *const args, char errmsg[], size_t maxwrite) {
+	char const *inputs[] = {
+		"abcdef", "//abcdef", "abcdef   //ghijkl", "abcdef//ghijkl",
+		"//abcdef//ghijkl", "    //abcdef", "\t\t//abcdef"
+	};
+	char *exp_output[] = {
+		"abcdef", "", "abcdef   ", "abcdef", "", "    ", "\t\t"
+	};
+	size_t const buffsize = 32;
+	char buff[buffsize];
+	size_t i;
+
+	for (i = 0; i < sizeof(inputs) / sizeof(char*); i++) {
+		if (asm_decomment(inputs[i], buff)) {
+			return 1;
+		}
+
+		if (strcmp(buff, exp_output[i])) {
 			return 1;
 		}
 	}
