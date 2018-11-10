@@ -51,15 +51,15 @@ typedef enum {
  * Returns: the total number of characters written to `dest', `-1' if an error
  * occurred.
  */
-int n2t_instr_to_bitstr(instr const in, char *const dest);
+int n2t_instr_to_bitstr(instr_t const in, char *const dest);
 /**
- * Instantiates an `instr' structure from `str_repr', containing its
+ * Instantiates an `instr_t' structure from `str_repr', containing its
  * human-readable textual representation.
  *
- * Returns: `1' if `str_repr' could not be converted into an `instr' type, `0'
+ * Returns: `1' if `str_repr' could not be converted into an `instr_t' type, `0'
  * otherwise.
  */
-int n2t_str_to_instr(char const *str_repr, instr *dest);
+int n2t_str_to_instr(char const *str_repr, instr_t *dest);
 /**
  * Sets the destination register(s) of a C-instruction computation (to choose
  * between `A', `D' or `M').
@@ -70,7 +70,7 @@ int n2t_str_to_instr(char const *str_repr, instr *dest);
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
 // TO-DO Test
-int n2t_set_dest(instr *dest, int dest_reg);
+int n2t_set_dest(instr_t *dest, int dest_reg);
 /**
  * Retrieves the destinationn register(s) of a C-instruction computation.
  *
@@ -78,7 +78,7 @@ int n2t_set_dest(instr *dest, int dest_reg);
  * possible combination of the three register.
  */
 // TO-DO Test
-int n2t_get_dest(instr *dest);
+int n2t_get_dest(instr_t *dest);
 /**
  * Sets the jump condition of a C-instruction computation (to choose between
  * `JUMP_NONE' or `JUMP_GT', `JUMP_EQ', `JUMP_LT' or any or-ed expression
@@ -87,17 +87,17 @@ int n2t_get_dest(instr *dest);
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
 // TO-DO Test
-int n2t_set_jump(instr *dest, int jump_cond);
+int n2t_set_jump(instr_t *dest, int jump_cond);
 /**
  * Returns: `JUMP_NONE', `JUMP_GT', `JUMP_EQ', `JUMP_GE', ..., or any other
  * combination up to `JUMP_ALWAYS'.
  */
 // TO-DO Test
-int n2t_get_jump(instr *dest);
+int n2t_get_jump(instr_t *dest);
 /**
  * Returns: the instruction type associated with `in'.
  */
-instr_type n2t_instr_type(instr const in);
+instr_type n2t_instr_type(instr_t const in);
 
 
 #endif

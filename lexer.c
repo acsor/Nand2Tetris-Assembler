@@ -8,19 +8,19 @@
 
 /**
  * Param `norm_repr': a normalized representation for the A instruction.
- * Param `dest': `instr' variable on which to store the decoded instruction.
+ * Param `dest': `instr_t' variable on which to store the decoded instruction.
  *
  * Returns: `1' if an error occurs, `0' otherwise.
  */
-static int n2t_str_to_ainstr(char const *norm_repr, instr *dest);
+static int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest);
 /**
  * Param `norm_repr': a normalized representation for the C instruction.
- * Param `dest': `instr' variable on which to store the decoded instruction.
+ * Param `dest': `instr_t' variable on which to store the decoded instruction.
  *
  * Returns: `1' if an error occurs parsing the `dest' portion, `2' parsing the
  * `comp' portion and `3' if parsing the `jump' portion, `0' otherwise.
  */
-static int n2t_str_to_cinstr(char const *norm_repr, instr *dest);
+static int n2t_str_to_cinstr(char const *norm_repr, instr_t *dest);
 /**
  * Parses the computation portion of a C-instruction.
  *
@@ -31,7 +31,7 @@ static int n2t_str_to_cinstr(char const *norm_repr, instr *dest);
 static int n2t_parse_cinstr_comp(char const *norm_repr);
 
 
-int n2t_instr_to_bitstr(instr const in, char *const dest) {
+int n2t_instr_to_bitstr(instr_t const in, char *const dest) {
 	int bitmask = 1 << 15, i = 0;
 
 	while (bitmask > 0 && i < 16) {
@@ -46,7 +46,7 @@ int n2t_instr_to_bitstr(instr const in, char *const dest) {
 	return i + 1;
 }
 
-int n2t_str_to_instr(char const *str_repr, instr *dest) {
+int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
 	char normalized[strlen(str_repr) + 1];
 
 	if (n2t_strip(str_repr, normalized)) {
@@ -61,7 +61,7 @@ int n2t_str_to_instr(char const *str_repr, instr *dest) {
 	}
 }
 
-int n2t_set_dest(instr *dest, int dest_reg) {
+int n2t_set_dest(instr_t *dest, int dest_reg) {
 	if (0 <= dest_reg && dest_reg < 8) {
 		dest->bits |= dest_reg << 3;
 
@@ -71,11 +71,11 @@ int n2t_set_dest(instr *dest, int dest_reg) {
 	return 1;
 }
 
-int n2t_get_dest(instr *dest) {
+int n2t_get_dest(instr_t *dest) {
 	return (dest->bits && (7 << 3)) >> 3;
 }
 
-int n2t_set_jump(instr *dest, int jump_cond) {
+int n2t_set_jump(instr_t *dest, int jump_cond) {
 	if (jump_cond <= 0 && jump_cond <= 7) {
 		dest->bits |= jump_cond;
 
@@ -85,11 +85,11 @@ int n2t_set_jump(instr *dest, int jump_cond) {
 	}
 }
 
-int n2t_get_jump(instr *dest) {
+int n2t_get_jump(instr_t *dest) {
 	return dest->bits & 7;
 }
 
-instr_type n2t_instr_type(instr const in) {
+instr_type n2t_instr_type(instr_t const in) {
 	// 0x8000 = 1 << 15 = 1000 0000 0000 0000 (binary form).
 	if (in.bits & 0x8000) {
 		return C;
@@ -98,7 +98,7 @@ instr_type n2t_instr_type(instr const in) {
 	return A;
 }
 
-static int n2t_str_to_ainstr(char const *norm_repr, instr *dest) {
+static int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
 	if (norm_repr[0] != '@') {
 		return 1;	// Not an A-instruction.
 	}
@@ -125,7 +125,7 @@ static int n2t_str_to_ainstr(char const *norm_repr, instr *dest) {
 	return 0;
 }
 
-static int n2t_str_to_cinstr(char const *norm_repr, instr *dest) {
+static int n2t_str_to_cinstr(char const *norm_repr, instr_t *dest) {
 	char const
 		*dest_field = index(norm_repr, '='),
 		*jump_field = index(norm_repr, ';');
@@ -139,7 +139,7 @@ static int n2t_str_to_cinstr(char const *norm_repr, instr *dest) {
 	char *comp_field;
 	int comp_encoding;
 
-	memset((void*)dest, 0, sizeof(instr));
+	memset((void*)dest, 0, sizeof(instr_t));
 
 	// Parse the `comp' part.
 	// If '=' was not found in `norm_repr', `dest_field' will be `NULL'.
