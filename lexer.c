@@ -98,6 +98,54 @@ instr_type n2t_instr_type(instr_t const in) {
 	return A;
 }
 
+tokenseq_t* n2t_tokenseq_alloc(size_t n) {
+	tokenseq_t *o;
+
+	if (n <= 0)
+		return NULL;
+
+	o = (tokenseq_t*) malloc(sizeof(tokenseq_t));
+	if (o == NULL)
+		return NULL;
+
+	o->tokens = (void*) calloc(n, sizeof(token_t));
+	if (o->tokens == NULL) {
+		free(o);
+		return NULL;
+	}
+
+	o->ntokens = n;
+	o->index = 0;
+
+	return o;
+}
+
+int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const i) {
+	if (s == NULL)
+		return 1;
+
+	s->tokens[s->index].data.instr = i;
+	s->index++;
+
+	return 0;
+}
+
+int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l) {
+	if (s == NULL)
+		return 1;
+
+	strncpy(s->tokens[s->index].data.label.str_form, l.str_form, BUFFSIZE_MED);
+	s->tokens[s->index].data.label.location = l.location;
+	s->index++;
+
+	return 0;
+}
+
+void n2t_tokenseq_free(tokenseq_t *l) {
+	free(l->tokens);
+	free(l);
+}
+
 static int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
 	if (norm_repr[0] != '@') {
 		return 1;	// Not an A-instruction.

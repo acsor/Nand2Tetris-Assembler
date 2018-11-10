@@ -2,6 +2,7 @@
 #define	LEXER_H
 
 #include "utils.h"
+#include <stdlib.h>
 
 
 #define SYM_EQ		'='
@@ -25,24 +26,47 @@
 #define JUMP_LE 6
 #define JUMP_ALWAYS 7
 
-#define	TEXT_REPR_SIZE 64
 
+typedef enum {
+	A = 0, C
+} instr_type;
 
 // TO-DO Employ a data type which has a width of two bytes cross-platform.
 typedef struct {
 	unsigned short int bits;
 	// Human-readable version of the instruction (e.g., as may be read from a
 	// source file).
-	char text_repr[TEXT_REPR_SIZE];
+	char text_repr[BUFFSIZE_MED];
 	// Lexer hint for whether this struct instance has been initialized
 	// during the first parsing phase, or should be filled in later. (Mostly
 	// useful for A-instructions.)
 	short int loaded;
-} instr;
+} instr_t;
+
 
 typedef enum {
-	A = 0, C
-} instr_type;
+	INSTR = 0, LABEL
+} token_type;
+
+typedef struct {
+	char str_form[BUFFSIZE_MED];
+	// The memory location which this label is a symbol for.
+	unsigned int location;
+} label_t;
+
+typedef struct {
+	union {
+		instr_t instr;
+		label_t label;
+	} data;
+	token_type type;
+} token_t;
+
+typedef struct {
+	token_t *tokens;
+	size_t ntokens;
+	size_t index;
+} tokenseq_t;
 
 
 /**
@@ -101,5 +125,16 @@ int n2t_get_jump(instr_t *dest);
  */
 instr_type n2t_instr_type(instr_t const in);
 
+/**
+ * Allocates data in the heap storage for `n' `token_t' instances, returning
+ * a `tokenseq_t' data type for management.
+ */
+tokenseq_t* n2t_tokenseq_alloc(size_t n);
+int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const i);
+int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l);
+/**
+ * Frees up the dynamic data previously allocated for a `tokenseq_t' structure.
+ */
+void n2t_tokenseq_free(tokenseq_t *l);
 
 #endif
