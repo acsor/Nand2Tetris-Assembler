@@ -1,5 +1,5 @@
-#ifndef TOKENIZER_H
-#define	TOKENIZER_H
+#ifndef LEXER_H
+#define	LEXER_H
 
 
 #define SYM_EQ		'='
@@ -32,7 +32,7 @@ typedef struct {
 	// Human-readable version of the instruction (e.g., as may be read from a
 	// source file).
 	char text_repr[TEXT_REPR_SIZE];
-	// Tokenizer hint for whether this struct instance has been initialized
+	// Lexer hint for whether this struct instance has been initialized
 	// during the first parsing phase, or should be filled in later. (Mostly
 	// useful for A-instructions.)
 	short int loaded;

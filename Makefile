@@ -6,13 +6,13 @@ flags=-Wall
 all: test.out
 
 
-test.out: test.c tokenizer.o utils.o
+test.out: test.c lexer.o utils.o
 	$(cc) $(flags) -o test.out $^
 
 scratch.out: scratch.c
 	$(cc) $(flags) -o scratch.out $^
 
-tokenizer.o: tokenizer.c tokenizer.h
+lexer.o: lexer.c lexer.h
 	$(cc) $(flags) -c $^
 
 utils.o: utils.c utils.h

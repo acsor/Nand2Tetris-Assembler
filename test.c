@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tokenizer.h"
+#include "lexer.h"
 #include "utils.h"
 
 #define	BUFFSIZE_SMALL 32
@@ -17,7 +17,7 @@ int test_n2t_decomment(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_replace_any(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite);
 
-// tokenizer.h
+// lexer.h
 int test_n2t_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_instr_type(void *const args, char errmsg[], size_t maxwrite);
 
