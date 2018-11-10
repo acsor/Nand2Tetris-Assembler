@@ -2,6 +2,13 @@
 #define UTILS_H
 
 
+#define	BUFFSIZE_MICRO 16
+#define	BUFFSIZE_SMALL 32
+#define	BUFFSIZE_MED 64
+#define	BUFFSIZE_LARGE 128
+#define	BUFFSIZE_VLARGE 256
+#define	BUFFSIZE_XLARGE 512
+
 #define ASCII_LETTERS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define	IS_SPACE(c)	(c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\v')
 

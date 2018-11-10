@@ -4,11 +4,6 @@
 #include "lexer.h"
 #include "utils.h"
 
-#define	BUFFSIZE_SMALL 32
-#define	BUFFSIZE_MED 64
-#define	BUFFSIZE_LARGE 128
-#define	BUFFSIZE_VLARGE 256
-
 
 // utils.h
 int test_n2t_strip(void *const args, char errmsg[], size_t maxwrite);
