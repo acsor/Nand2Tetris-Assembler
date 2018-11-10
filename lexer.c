@@ -106,17 +106,17 @@ static int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
 	if (n2t_is_numeric(norm_repr + 1) && norm_repr[1] != '0') {
 		// `[1-9]\d*' digits.
 		dest->bits = atoi(norm_repr + 1);
-		strncpy(dest->text_repr, norm_repr, TEXT_REPR_SIZE);
+		strncpy(dest->text_repr, norm_repr, BUFFSIZE_MED);
 		dest->loaded = 1;
 	} else if (	// @R0, @R1, ..., @R15
 			norm_repr[1] == 'R' && n2t_is_numeric(norm_repr + 2) &&\
 			atoi(norm_repr + 2) < 16
 			) {
 		dest->bits = atoi(norm_repr + 2);
-		strncpy(dest->text_repr, norm_repr, TEXT_REPR_SIZE);
+		strncpy(dest->text_repr, norm_repr, BUFFSIZE_MED);
 		dest->loaded = 1;
 	} else if (n2t_is_alpha(norm_repr + 1, "_")) {		// @LABEL, @label
-		strncpy(dest->text_repr, norm_repr, TEXT_REPR_SIZE);
+		strncpy(dest->text_repr, norm_repr, BUFFSIZE_MED);
 		dest->loaded = 0;
 	} else {
 		return 1;

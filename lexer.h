@@ -1,6 +1,8 @@
 #ifndef LEXER_H
 #define	LEXER_H
 
+#include "utils.h"
+
 
 #define SYM_EQ		'='
 #define SYM_SEMIC	';'
