@@ -4,13 +4,18 @@
 #include "tokenizer.h"
 #include "utils.h"
 
-#define ERR_SIZE 256
+#define	BUFFSIZE_SMALL 32
+#define	BUFFSIZE_MED 64
+#define	BUFFSIZE_LARGE 128
+#define	BUFFSIZE_VLARGE 256
 
 
 // utils.h
 int test_n2t_strip(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_composed_of(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_decomment(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_replace_any(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite);
 
 // tokenizer.h
 int test_n2t_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
@@ -22,21 +27,28 @@ typedef int (*test_function)(void*, char[], size_t);
 int main (int argc, char *argv[]) {
 	test_function tests[] = {
 		test_n2t_strip, test_n2t_composed_of, test_n2t_decomment,
+		test_n2t_replace_any, test_n2t_collapse_any,
 
 		test_n2t_instr_to_bitstr, test_n2t_instr_type
 	};
 	char *test_names[] = {
 		"test_n2t_strip", "test_n2t_composed_of", "test_n2t_decomment",
+		"test_n2t_replace_any", "test_n2t_collapse_any",
 
 		"test_n2t_instr_to_bitstr", "test_n2t_instr_type"
 	};
-	char errmsg[ERR_SIZE];
+	char errmsg[BUFFSIZE_VLARGE];
 	size_t i, tests_no = sizeof(tests) / sizeof(test_function);
 
 	for (i = 0; i < tests_no; i++) {
+		errmsg[0] = '\0';
 		printf("Testing `%s()'... ", test_names[i]);
 
-		if (tests[i](NULL, errmsg, ERR_SIZE)) {
+		if (tests[i](NULL, errmsg, BUFFSIZE_VLARGE)) {
+			if (errmsg[0] == '\0') {
+				strncpy(errmsg, "???", BUFFSIZE_VLARGE);
+			}
+
 			printf("FAILED.\n\t`%s'\n", errmsg);
 		} else {
 			puts("OK.");
@@ -109,6 +121,57 @@ int test_n2t_decomment(void *const args, char errmsg[], size_t maxwrite) {
 		}
 
 		if (strcmp(buff, exp_output[i])) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int test_n2t_replace_any(void *const args, char errmsg[], size_t maxwrite) {
+	char const *input = "abc def ghi jkl";
+	char const *old[] = {
+		"abc", "def", "ghi", "jkl", " ", "abcdefghijkl "
+	};
+	char const new = 'x';
+	char const *exp_outputs[] = {
+		"xxx def ghi jkl", "abc xxx ghi jkl", "abc def xxx jkl",
+		"abc def ghi xxx", "abcxdefxghixjkl", "xxxxxxxxxxxxxxx"
+	};
+	char buff[BUFFSIZE_MED];
+	size_t i;
+
+	for (i = 0; i < sizeof(exp_outputs) / sizeof(char*); i++) {
+		n2t_replace_any(input, old[i], new, buff);
+
+		if (strncmp(exp_outputs[i], buff, BUFFSIZE_MED)) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite) {
+	char const *input = "abc def ghi jkl";
+	char const *old[] = {
+		"abc", "def", "ghi", "jkl", " ", "abcdefghijkl "
+	};
+	char const *exp_outputs[] = {
+		" def ghi jkl", "abc  ghi jkl", "abc def  jkl",
+		"abc def ghi ", "abcdefghijkl", ""
+	};
+	char buff[BUFFSIZE_MED];
+	size_t i;
+
+	for (i = 0; i < sizeof(exp_outputs) / sizeof(char*); i++) {
+		n2t_collapse_any(input, old[i], buff);
+
+		if (strncmp(exp_outputs[i], buff, BUFFSIZE_MED)) {
+			snprintf(
+				errmsg, maxwrite, "Expected `%s', but got `%s'",
+				exp_outputs[i], buff
+			);
 			return 1;
 		}
 	}

@@ -2,6 +2,42 @@
 #include <string.h>
 
 
+int n2t_replace_any(
+	char const *source, char const *old, char new, char *dest
+) {
+	size_t pos = 0, repcount = 0;
+
+	while (source[pos] != '\0') {
+		if (index(old, source[pos])) {
+			dest[pos] = new;
+			repcount++;
+		} else {
+			dest[pos] = source[pos];
+		}
+
+		pos++;
+	}
+
+	return repcount;
+}
+
+int n2t_collapse_any(char const *source, char const *old, char *dest) {
+	size_t sourcepos = 0, destpos = 0;
+
+	while (source[sourcepos] != '\0') {
+		if (!index(old, source[sourcepos])) {
+			dest[destpos] = source[sourcepos];
+			destpos++;
+		}
+
+		sourcepos++;
+	}
+
+	dest[destpos] = '\0';
+
+	return destpos;
+}
+
 int	n2t_strip(char const *source, char *dest) {
 	size_t const source_len = strlen(source);
 	size_t lower = 0, upper = source_len;
