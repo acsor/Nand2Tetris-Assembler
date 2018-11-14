@@ -6,3 +6,4 @@
 *.gch
 Session.vim
 scratch.*
+assembler

@@ -3,8 +3,11 @@ flags=-Wall
 
 
 .PHONY:	clear
-all: test.out
+all: assembler test.out scratch.out
 
+
+assembler: assembler.c lexer.o utils.o
+	$(cc) $(flags) -o assembler $^
 
 test.out: test.c lexer.o utils.o
 	$(cc) $(flags) -o test.out $^
@@ -20,4 +23,4 @@ utils.o: utils.c utils.h
 
 
 clear:
-	rm *.o *.out
+	rm assembler *.o *.out
