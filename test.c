@@ -196,6 +196,8 @@ int test_n2t_instr_to_bitstr(
 		}
 	}
 
+	// TO-DO Add test report (total n. issues, total passed, ...).
+
 	return 0;
 }
 
