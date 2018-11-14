@@ -1,9 +1,8 @@
 #include "lexer.h"
 #include "utils.h"
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <regex.h>
 
 
 /**
@@ -20,7 +19,7 @@ static int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest);
  * Returns: `1' if an error occurs parsing the `dest' portion, `2' parsing the
  * `comp' portion and `3' if parsing the `jump' portion, `0' otherwise.
  */
-static int n2t_str_to_cinstr(char const *norm_repr, instr_t *dest);
+static int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest);
 /**
  * Parses the computation portion of a C-instruction.
  *
@@ -56,9 +55,32 @@ int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
 	if (normalized[0] == '@') {
 		return n2t_str_to_ainstr(normalized, dest);
 	} else {
-		// Prototypical regex: "[ADM]\s*=\s*" for the assignment part.
 		return n2t_str_to_cinstr(normalized, dest);
 	}
+}
+
+int n2t_str_to_label(char const *str_repr, label_t *dest) {
+	size_t const len = strlen(str_repr);
+	char copy[len - 1];
+
+	if (str_repr[0] != '(' || str_repr[len - 1] != ')') {
+		return 1;
+	}
+
+	strncpy(copy, str_repr + 1, len - 2);
+	copy[len - 2] = '\0';
+
+	if (n2t_is_alpha(copy, ".$_0123456789")) {
+		strncpy(dest->text_repr, str_repr, BUFFSIZE_MED);
+
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+int n2t_tokenseq_full(tokenseq_t const *s) {
+	return s->last >= s->ntokens;
 }
 
 int n2t_set_dest(instr_t *dest, int dest_reg) {
@@ -115,17 +137,34 @@ tokenseq_t* n2t_tokenseq_alloc(size_t n) {
 	}
 
 	o->ntokens = n;
-	o->index = 0;
+	o->last = 0;
 
 	return o;
+}
+
+tokenseq_t* n2t_tokenseq_extend(tokenseq_t *s, size_t n) {
+	token_t *t;
+
+	if (n > 0) {
+		t = realloc(s->tokens, sizeof(token_t) * (s->ntokens + n));
+
+		if (t == NULL) {
+			return NULL;
+		} else {
+			s->tokens = t;
+			s->ntokens += n;
+		}
+	}
+
+	return s;
 }
 
 int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const i) {
 	if (s == NULL)
 		return 1;
 
-	s->tokens[s->index].data.instr = i;
-	s->index++;
+	s->tokens[s->last].data.instr = i;
+	s->last++;
 
 	return 0;
 }
@@ -134,9 +173,11 @@ int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l) {
 	if (s == NULL)
 		return 1;
 
-	strncpy(s->tokens[s->index].data.label.str_form, l.str_form, BUFFSIZE_MED);
-	s->tokens[s->index].data.label.location = l.location;
-	s->index++;
+	strncpy(
+		s->tokens[s->last].data.label.text_repr, l.text_repr, BUFFSIZE_MED
+	);
+	s->tokens[s->last].data.label.location = l.location;
+	s->last++;
 
 	return 0;
 }
@@ -144,6 +185,51 @@ int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l) {
 void n2t_tokenseq_free(tokenseq_t *l) {
 	free(l->tokens);
 	free(l);
+}
+
+tokenseq_t* n2t_tokenize(const char *filepath) {
+	FILE *fin;
+	char buff[BUFFSIZE_LARGE];
+
+	tokenseq_t *seq;
+	instr_t i;
+	label_t l;
+
+	if ((fin = fopen(filepath, "r")) == NULL) {
+		return NULL;
+	}
+
+	if ((seq = n2t_tokenseq_alloc(BUFFSIZE_MED)) == NULL) {
+		fclose(fin);
+		return NULL;
+	}
+	
+	while (fgets(buff, BUFFSIZE_LARGE, fin)) {
+		n2t_decomment(buff, buff);
+		n2t_strip(buff, buff);
+
+		// If `buff' contains nothing after taking away comments and
+		// whitespaces:
+		if (buff[0] == '\0')
+			continue;
+
+		if (n2t_tokenseq_full(seq)) {
+			// Double the size at each new refill.
+			n2t_tokenseq_extend(seq, seq->ntokens);
+		}
+
+		if (n2t_str_to_instr(buff, &i) == 0) {
+			n2t_tokenseq_append_instr(seq, i);
+			memset(&i, 0, sizeof(instr_t));
+		} else if (n2t_str_to_label(buff, &l) == 0) {
+			n2t_tokenseq_append_label(seq, l);
+			memset(&l, 0, sizeof(label_t));
+		}
+	}
+
+	fclose(fin);
+
+	return seq;
 }
 
 static int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
@@ -154,50 +240,46 @@ static int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
 	if (n2t_is_numeric(norm_repr + 1) && norm_repr[1] != '0') {
 		// `[1-9]\d*' digits.
 		dest->bits = atoi(norm_repr + 1);
-		strncpy(dest->text_repr, norm_repr, BUFFSIZE_MED);
 		dest->loaded = 1;
 	} else if (	// @R0, @R1, ..., @R15
-			norm_repr[1] == 'R' && n2t_is_numeric(norm_repr + 2) &&\
-			atoi(norm_repr + 2) < 16
-			) {
+		norm_repr[1] == 'R' && n2t_is_numeric(norm_repr + 2) &&\
+		atoi(norm_repr + 2) < 16
+	) {
 		dest->bits = atoi(norm_repr + 2);
-		strncpy(dest->text_repr, norm_repr, BUFFSIZE_MED);
 		dest->loaded = 1;
 	} else if (n2t_is_alpha(norm_repr + 1, "_")) {		// @LABEL, @label
-		strncpy(dest->text_repr, norm_repr, BUFFSIZE_MED);
 		dest->loaded = 0;
 	} else {
 		return 1;
 	}
 
+	strncpy(dest->text_repr, norm_repr, BUFFSIZE_MED);
+
 	return 0;
 }
 
-static int n2t_str_to_cinstr(char const *norm_repr, instr_t *dest) {
+static int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 	char const
-		*dest_field = index(norm_repr, '='),
-		*jump_field = index(norm_repr, ';');
+		*const dest_field_tail = index(norm_repr, '='),
+		*const jump_field_head = index(norm_repr, ';');
+	char comp_field[strlen(norm_repr) + 1];
+	int comp_encoding;
+	size_t dest_offset = 0;
 
 	char parsed_dest[3] = "   ";
 	size_t parsed_dest_index = 0;
 
-	char *dbuff;
-	size_t dbuff_size;
+	memset(dest, 0, sizeof(instr_t));
 
-	char *comp_field;
-	int comp_encoding;
-
-	memset((void*)dest, 0, sizeof(instr_t));
-
-	// Parse the `comp' part.
-	// If '=' was not found in `norm_repr', `dest_field' will be `NULL'.
-	while (norm_repr < dest_field) {
-		if (!IS_SPACE(*norm_repr)) {
-			if (index(parsed_dest, *norm_repr)) {
+	// Parse the `dest' part.
+	// If '=' was not found in `norm_repr', `dest_field_tail' will be `NULL'.
+	while (norm_repr + dest_offset < dest_field_tail) {
+		if (!IS_SPACE(norm_repr[dest_offset])) {
+			if (index(parsed_dest, norm_repr[dest_offset])) {
 				return 1;	// We already parsed `*norm_repr'!
 			}
 
-			switch (*norm_repr) {
+			switch (norm_repr[dest_offset]) {
 				case 'M':
 					n2t_set_dest(dest, DEST_M);
 					parsed_dest[parsed_dest_index] = 'M';
@@ -213,47 +295,43 @@ static int n2t_str_to_cinstr(char const *norm_repr, instr_t *dest) {
 				default:
 					return 1;
 			}
+
+			parsed_dest_index++;
 		}
 
-		norm_repr++;
+		dest_offset++;
 	}
 
 	// Parse the `jump' part.
-	if (jump_field) {
-		dbuff_size = strlen(jump_field);
-		dbuff = (char*) malloc(dbuff_size);
-		strncpy(dbuff, jump_field + 1, dbuff_size);
-		n2t_strip(dbuff, dbuff);
-
-		if (!strncmp(dbuff, "JGT", dbuff_size)) {
+	if (jump_field_head) {
+		if (!strcmp(jump_field_head + 1, "JGT")) {
 			n2t_set_jump(dest, JUMP_GT);
-		} else if (!strncmp(dbuff, "JEQ", dbuff_size)) {
+		} else if (!strcmp(jump_field_head + 1, "JEQ")) {
 			n2t_set_jump(dest, JUMP_EQ);
-		} else if (!strncmp(dbuff, "JGE", dbuff_size)) {
+		} else if (!strcmp(jump_field_head + 1, "JGE")) {
 			n2t_set_jump(dest, JUMP_GE);
-		} else if (!strncmp(dbuff, "JLT", dbuff_size)) {
+		} else if (!strcmp(jump_field_head + 1, "JLT")) {
 			n2t_set_jump(dest, JUMP_LT);
-		} else if (!strncmp(dbuff, "JNE", dbuff_size)) {
+		} else if (!strcmp(jump_field_head + 1, "JNE")) {
 			n2t_set_jump(dest, JUMP_NE);
-		} else if (!strncmp(dbuff, "JLE", dbuff_size)) {
+		} else if (!strcmp(jump_field_head + 1, "JLE")) {
 			n2t_set_jump(dest, JUMP_LE);
-		} else if (!strncmp(dbuff, "JMP", dbuff_size)) {
+		} else if (!strcmp(jump_field_head + 1, "JMP")) {
 			n2t_set_jump(dest, JUMP_ALWAYS);
 		} else {
 			return 3;
 		}
-
-		free(dbuff);
-		dbuff_size = 0;
 	}
 
 	// Parse the `comp' part.
-	comp_field = dest_field ? strdup(dest_field): strdup(norm_repr);
-	if (jump_field) {
-		comp_field[
-			(index(comp_field, ';') - comp_field) / sizeof(comp_field)
-		] = '\0';
-	}
+	if (dest_field_tail)
+		strcpy(comp_field, dest_field_tail + 1);
+	else
+		strcpy(comp_field, norm_repr);
+
+	if (jump_field_head)
+		*index(comp_field, ';') = '\0';
+
 	n2t_strip(comp_field, comp_field);
 	n2t_collapse_any(comp_field, " \t", comp_field);
 
@@ -263,8 +341,8 @@ static int n2t_str_to_cinstr(char const *norm_repr, instr_t *dest) {
 		return 2;
 	}
 
-	free(comp_field);
 	dest->bits |= (7 << 13);
+	strncpy(dest->text_repr, norm_repr, BUFFSIZE_MED);
 
 	return 0;
 }

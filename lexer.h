@@ -49,9 +49,11 @@ typedef enum {
 } token_type;
 
 typedef struct {
-	char str_form[BUFFSIZE_MED];
+	char text_repr[BUFFSIZE_MED];
 	// The memory location which this label is a symbol for.
 	unsigned int location;
+	// Whether the `location' value of this instance has been set.
+	short int loaded;
 } label_t;
 
 typedef struct {
@@ -64,8 +66,8 @@ typedef struct {
 
 typedef struct {
 	token_t *tokens;
+	size_t last;
 	size_t ntokens;
-	size_t index;
 } tokenseq_t;
 
 
@@ -82,10 +84,18 @@ int n2t_instr_to_bitstr(instr_t const in, char *const dest);
  * Instantiates an `instr_t' structure from `str_repr', containing its
  * human-readable textual representation.
  *
- * Returns: `1' if `str_repr' could not be converted into an `instr_t' type, `0'
- * otherwise.
+ * Returns: `1' if `str_repr' could not be converted into an `instr_t' type,
+ * `0' otherwise.
  */
 int n2t_str_to_instr(char const *str_repr, instr_t *dest);
+/**
+ * Instantiates an `label_t' variable from `str_repr', containing its
+ * human-readable textual representation.
+ *
+ * Returns: `1' if `str_repr' could not be converted into an `label_t' type,
+ * `0' otherwise.
+ */
+int n2t_str_to_label(char const *str_repr, label_t *dest);
 /**
  * Sets the destination register(s) of a C-instruction computation (to choose
  * between `A', `D' or `M').
@@ -127,14 +137,39 @@ instr_type n2t_instr_type(instr_t const in);
 
 /**
  * Allocates data in the heap storage for `n' `token_t' instances, returning
- * a `tokenseq_t' data type for management.
+ * a `tokenseq_t' data type for management or `NULL' if an issue verifies.
  */
 tokenseq_t* n2t_tokenseq_alloc(size_t n);
+/**
+ * Extends the number of `token_t' values stored by `s' by an additional `n'.
+ *
+ * Returns: a pointer with the same value as `s' or `NULL' if an error
+ * verifies.
+ */
+tokenseq_t* n2t_tokenseq_extend(tokenseq_t *s, size_t n);
 int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const i);
 int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l);
+/**
+ * Returns: `1' if `s' can not contain any more `token_t's, `0' otherwise.
+ * Note that for a `tokenseq_t' variable `s', `s->last' points to the NEXT
+ * `token_t' to be dealt with. Hence, with `20' elements and `s->last == 19',
+ * `s' is NOT considered to be full (it will when `s->last >= 20').
+ */
+int n2t_tokenseq_full(tokenseq_t const *s);
 /**
  * Frees up the dynamic data previously allocated for a `tokenseq_t' structure.
  */
 void n2t_tokenseq_free(tokenseq_t *l);
+
+/**
+ * Comments and new lines are ignored.
+ *
+ * Param `filepath': a file path of an .asm file to tokenize.
+ *
+ * Returns: a `tokenseq_t' pointer, storing all the Hack-language tokens that
+ * could be interpreted, or `NULL' if a reading error occurs. The return value
+ * should be later freed by a call to `n2t_tokenseq_free()'.
+ */
+tokenseq_t* n2t_tokenize(const char *filepath);
 
 #endif
