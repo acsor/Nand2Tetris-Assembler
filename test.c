@@ -33,7 +33,8 @@ int main (int argc, char *argv[]) {
 		"test_n2t_instr_to_bitstr", "test_n2t_instr_type"
 	};
 	char errmsg[BUFFSIZE_VLARGE];
-	size_t i, tests_no = sizeof(tests) / sizeof(test_function);
+	size_t const tests_no = sizeof(tests) / sizeof(test_function);
+	size_t i, failed_no = 0;
 
 	for (i = 0; i < tests_no; i++) {
 		errmsg[0] = '\0';
@@ -45,10 +46,16 @@ int main (int argc, char *argv[]) {
 			}
 
 			printf("FAILED.\n\t`%s'\n", errmsg);
+			failed_no++;
 		} else {
 			puts("OK.");
 		}
 	}
+
+	printf(
+		"\nRUN %lu TESTS (%lu OK, %lu FAILED).\n",
+		tests_no, tests_no - failed_no, failed_no
+	);
 
 	return EXIT_SUCCESS;
 }
