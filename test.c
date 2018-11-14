@@ -14,7 +14,8 @@ int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite);
 
 // lexer.h
 int test_n2t_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
-int test_n2t_instr_type(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_str_to_instr(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_set_dest(instr_t *dest, int dest_reg);
 
 typedef int (*test_function)(void*, char[], size_t);
 
@@ -24,13 +25,13 @@ int main (int argc, char *argv[]) {
 		test_n2t_strip, test_n2t_composed_of, test_n2t_decomment,
 		test_n2t_replace_any, test_n2t_collapse_any,
 
-		test_n2t_instr_to_bitstr, test_n2t_instr_type
+		test_n2t_instr_to_bitstr
 	};
 	char *test_names[] = {
 		"test_n2t_strip", "test_n2t_composed_of", "test_n2t_decomment",
 		"test_n2t_replace_any", "test_n2t_collapse_any",
 
-		"test_n2t_instr_to_bitstr", "test_n2t_instr_type"
+		"test_n2t_instr_to_bitstr"
 	};
 	char errmsg[BUFFSIZE_VLARGE];
 	size_t const tests_no = sizeof(tests) / sizeof(test_function);
@@ -184,41 +185,35 @@ int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite) {
 int test_n2t_instr_to_bitstr(
 	void *const args, char errmsg[], size_t maxwrite
 ) {
-	instr_t inputs[] = {
-		{0}, {1}, {4}, {1 << 15}, {(1 << 15) - 1}
-	};
+	short int inputs[] = {0, 1, 4, 1 << 15, (1 << 15) - 1};
+	instr_t in;
+	Cinstr_t c;
+	Ainstr_t a;
 	size_t const buffsize = 17;
 	char *exp_outputs[] = {
 		"0000000000000000", "0000000000000001", "0000000000000100",
 		"1000000000000000", "0111111111111111",
 	};
 	char output[buffsize];
-	size_t i, inputs_no = sizeof(inputs) / sizeof(instr_t);
+	size_t i, inputs_no = sizeof(inputs) / sizeof(short int);
 
 	for (i = 0; i < inputs_no; i++) {
-		n2t_instr_to_bitstr(inputs[i], output);
+		c = inputs[i];
+		a.bits = inputs[i];
+		in.instr.c = c;
+		in.instr.a = a;
 
-		if (strncmp(exp_outputs[i], output, buffsize)) {
+		in.type = A;
+		n2t_instr_to_bitstr(in, output);
+
+		if (strncmp(exp_outputs[i], output, buffsize))
 			return 1;
-		}
-	}
 
-	// TO-DO Add test report (total n. issues, total passed, ...).
+		in.type = C;
+		n2t_instr_to_bitstr(in, output);
 
-	return 0;
-}
-
-int test_n2t_instr_type(void *const args, char errmsg[], size_t maxwrite) {
-	instr_t inputs[] = {
-		{0}, {1}, {4}, {1 << 15}, {(1 << 15) - 1}
-	};
-	instr_type exp_outputs[] = {A, A, A, C, A};
-	size_t i, inputs_no = sizeof(inputs) / sizeof(instr_t);
-
-	for (i = 0; i < inputs_no; i++) {
-		if (exp_outputs[i] != n2t_instr_type(inputs[i])) {
+		if (strncmp(exp_outputs[i], output, buffsize))
 			return 1;
-		}
 	}
 
 	return 0;

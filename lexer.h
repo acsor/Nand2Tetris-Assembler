@@ -26,21 +26,31 @@
 #define JUMP_LE 6
 #define JUMP_ALWAYS 7
 
-
 typedef enum {
 	A = 0, C
-} instr_type;
+} instr_type_t;
 
-// TO-DO Employ a data type which has a width of two bytes cross-platform.
 typedef struct {
-	unsigned short int bits;
-	// Human-readable version of the instruction (e.g., as may be read from a
-	// source file).
-	char text_repr[BUFFSIZE_MED];
+	short int bits;
+	// Name of the label, if any, that this A instruction was initially read
+	// with.
+	char label[BUFFSIZE_MED];
 	// Lexer hint for whether this struct instance has been initialized
-	// during the first parsing phase, or should be filled in later. (Mostly
-	// useful for A-instructions.)
+	// during the first parsing phase, or should be filled in later.
 	short int loaded;
+} Ainstr_t;
+
+// TO-DO Make sure to employ a data type which has a width of two bytes
+// cross-platform.
+typedef short int Cinstr_t;
+
+// Unfortunately, I can't say how space-efficient such a solution can be.
+typedef struct {
+	union {
+		Ainstr_t a;
+		Cinstr_t c;
+	} instr;
+	instr_type_t type;
 } instr_t;
 
 
@@ -51,7 +61,7 @@ typedef enum {
 typedef struct {
 	char text_repr[BUFFSIZE_MED];
 	// The memory location which this label is a symbol for.
-	unsigned int location;
+	unsigned short int location;
 	// Whether the `location' value of this instance has been set.
 	short int loaded;
 } label_t;
@@ -66,6 +76,7 @@ typedef struct {
 
 typedef struct {
 	token_t *tokens;
+	// Index of the next `token_t' to be written.
 	size_t last;
 	size_t ntokens;
 } tokenseq_t;
@@ -81,6 +92,18 @@ typedef struct {
  */
 int n2t_instr_to_bitstr(instr_t const in, char *const dest);
 /**
+ * Converts an instruction `in' in its string representation.
+ */
+int n2t_instr_to_str(instr_t const in, char *const dest);
+/**
+ * Converts an A-instruction `in' in its string representation.
+ */
+int n2t_Ainstr_to_str(instr_t const in, char *const dest);
+/**
+ * Converts a C-instruction `in' in its string representation.
+ */
+int n2t_Cinstr_to_str(instr_t const in, char *const dest);
+/**
  * Instantiates an `instr_t' structure from `str_repr', containing its
  * human-readable textual representation.
  *
@@ -88,6 +111,21 @@ int n2t_instr_to_bitstr(instr_t const in, char *const dest);
  * `0' otherwise.
  */
 int n2t_str_to_instr(char const *str_repr, instr_t *dest);
+/**
+ * Param `norm_repr': a normalized representation for the A instruction.
+ * Param `dest': `instr_t' variable on which to store the decoded instruction.
+ *
+ * Returns: `1' if an error occurs, `0' otherwise.
+ */
+int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest);
+/**
+ * Param `norm_repr': a normalized representation for the C instruction.
+ * Param `dest': `instr_t' variable on which to store the decoded instruction.
+ *
+ * Returns: `1' if an error occurs parsing the `dest' portion, `2' parsing the
+ * `comp' portion and `3' if parsing the `jump' portion, `0' otherwise.
+ */
+int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest);
 /**
  * Instantiates an `label_t' variable from `str_repr', containing its
  * human-readable textual representation.
@@ -106,7 +144,7 @@ int n2t_str_to_label(char const *str_repr, label_t *dest);
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
 // TO-DO Test
-int n2t_set_dest(instr_t *dest, int dest_reg);
+int n2t_set_dest(Cinstr_t *dest, int dest_reg);
 /**
  * Retrieves the destinationn register(s) of a C-instruction computation.
  *
@@ -114,7 +152,7 @@ int n2t_set_dest(instr_t *dest, int dest_reg);
  * possible combination of the three register.
  */
 // TO-DO Test
-int n2t_get_dest(instr_t *dest);
+int n2t_get_dest(Cinstr_t *in);
 /**
  * Sets the jump condition of a C-instruction computation (to choose between
  * `JUMP_NONE' or `JUMP_GT', `JUMP_EQ', `JUMP_LT' or any or-ed expression
@@ -123,17 +161,13 @@ int n2t_get_dest(instr_t *dest);
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
 // TO-DO Test
-int n2t_set_jump(instr_t *dest, int jump_cond);
+int n2t_set_jump(Cinstr_t *dest, int jump_cond);
 /**
  * Returns: `JUMP_NONE', `JUMP_GT', `JUMP_EQ', `JUMP_GE', ..., or any other
  * combination up to `JUMP_ALWAYS'.
  */
 // TO-DO Test
-int n2t_get_jump(instr_t *dest);
-/**
- * Returns: the instruction type associated with `in'.
- */
-instr_type n2t_instr_type(instr_t const in);
+int n2t_get_jump(Cinstr_t *in);
 
 /**
  * Allocates data in the heap storage for `n' `token_t' instances, returning
@@ -147,7 +181,7 @@ tokenseq_t* n2t_tokenseq_alloc(size_t n);
  * verifies.
  */
 tokenseq_t* n2t_tokenseq_extend(tokenseq_t *s, size_t n);
-int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const i);
+int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const in);
 int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l);
 /**
  * Returns: `1' if `s' can not contain any more `token_t's, `0' otherwise.
