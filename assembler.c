@@ -19,6 +19,7 @@ int main (int argc, char *argv[]) {
 		if (s->tokens[i].type == INSTR) {
 			n2t_instr_to_str(s->tokens[i].data.instr, buff);
 			puts(buff);
+			buff[0] = '\0';
 		} else if (s->tokens[i].type == LABEL) {
 			puts(s->tokens[i].data.label.text_repr);
 		}

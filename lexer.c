@@ -5,6 +5,8 @@
 #include <stdlib.h>
 
 
+// A mapping from destination information (the `dest' fragment) to its
+// normalized textual representation.
 static char const *INDEX_TO_DEST[] = {
 	"", "M", "D", "MD", "A", "AM", "AD", "AMD"
 };
@@ -52,17 +54,19 @@ static char const *INDEX_TO_COMP[] = {
 	"", "", "", "", "", "", "", "", "", "", "",
 	"D-M",	//83
 	"",
-	"D|M",	//?
+	"D|M",	//85
 	"", "", "", "", "", "",
-	"M",	//?
-	"!M",	//?
-	"M-1",	//?
+	"M",	//92
+	"!M",	//93
+	"M-1",	//94
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"",
-	"-M",	//?
-	"", "", "", "", "", "", "", "", "", "", "",
-	"M+1"	//?
+	"-M",	//115
+	"", "", "", "", "", "", "", "", "", "",
+	"M+1"	//126
 };
+// A mapping from jump information (the `jump' fragment) to its
+// normalized textual representation.
 static char const *INDEX_TO_JUMP[] = {
 	"", "JGT", "JEQ", "JGE", "JLT", "JNE", "JLE", "JMP"
 };
@@ -131,9 +135,9 @@ int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest) {
 
 	// Write the comp part.
 	if (comp < 0 || COMP_MPLUS1 < comp) {
-		strcat(dest, INDEX_TO_COMP[comp]);
-	} else {
 		return 2;
+	} else {
+		strcat(dest, INDEX_TO_COMP[comp]);
 	}
 
 	// Write the jump part.
@@ -185,6 +189,8 @@ int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
 		return 1;
 	}
 
+	dest->type = A;
+
 	return 0;
 }
 
@@ -196,7 +202,7 @@ int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 	int comp_encoding;
 	size_t dest_offset = 0;
 
-	char parsed_dest[3] = "   ";
+	char parsed_dest[4] = "   ";
 	size_t parsed_dest_index = 0;
 
 	dest->instr.c = 0;
@@ -272,6 +278,7 @@ int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 	}
 
 	dest->instr.c |= (7 << 13);
+	dest->type = C;
 
 	return 0;
 }
@@ -297,7 +304,7 @@ int n2t_str_to_label(char const *str_repr, label_t *dest) {
 }
 
 int n2t_set_dest(Cinstr_t *dest, int dest_reg) {
-	if (0 <= dest_reg && dest_reg < 8) {
+	if (DEST_NONE <= dest_reg && dest_reg <= DEST_AMD) {
 		*dest |= dest_reg << 3;
 
 		return 0;
@@ -307,7 +314,7 @@ int n2t_set_dest(Cinstr_t *dest, int dest_reg) {
 }
 
 int n2t_get_dest(Cinstr_t const in) {
-	return (in && (0x7 << 3)) >> 3;
+	return (in & (0x7 << 3)) >> 3;
 }
 
 int n2t_set_comp(Cinstr_t *in, short int comp_instr) {
@@ -328,7 +335,7 @@ int n2t_get_comp(Cinstr_t in) {
 }
 
 int n2t_set_jump(Cinstr_t *dest, int jump_cond) {
-	if (jump_cond <= 0 && jump_cond <= 7) {
+	if (JUMP_NONE <= jump_cond && jump_cond <= JUMP_ALWAYS) {
 		*dest |= jump_cond;
 
 		return 0;
@@ -384,12 +391,16 @@ int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const in) {
 	if (s == NULL)
 		return 1;
 
-	s->tokens[s->last].type = in.type;
-
-	if (in.type == A)
-		s->tokens[s->last].data.instr.instr.c = in.instr.c;
-	else
+	if (in.type == A) {
 		s->tokens[s->last].data.instr.instr.a = in.instr.a;
+		s->tokens[s->last].data.instr.type = A;
+	} else if (in.type == C) {
+		s->tokens[s->last].data.instr.instr.c = in.instr.c;
+		s->tokens[s->last].data.instr.type = C;
+	} else {
+		return 1;
+	}
+	s->tokens[s->last].type = INSTR;
 
 	s->last++;
 
@@ -404,6 +415,7 @@ int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l) {
 		s->tokens[s->last].data.label.text_repr, l.text_repr, BUFFSIZE_MED
 	);
 	s->tokens[s->last].data.label.location = l.location;
+	s->tokens[s->last].type = LABEL;
 	s->last++;
 
 	return 0;

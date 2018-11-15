@@ -123,8 +123,9 @@ int n2t_instr_to_bitstr(instr_t const in, char *const dest);
 /**
  * Converts an instruction `in' in its string representation.
  *
- * Returns: the total number of characters written to `dest', `-1' if an error
- * occurred.
+ * Returns: the return value of either `n2t_Ainstr_to_str()' or
+ * `n2t_Cinstr_to_str()', or `-1' if an error occurs before delegating the
+ * call.
  */
 int n2t_instr_to_str(instr_t const in, char *const dest);
 /**
