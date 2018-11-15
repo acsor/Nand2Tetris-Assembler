@@ -94,15 +94,57 @@ int n2t_instr_to_bitstr(instr_t const in, char *const dest) {
 }
 
 int n2t_instr_to_str(instr_t const in, char *const dest) {
-
+	if (in.type == A) {
+		return n2t_Ainstr_to_str(in.instr.a, dest);
+	} else if (in.type == C) {
+		return n2t_Cinstr_to_str(in.instr.c, dest);
+	} else {
+		return -1;
+	}
 }
 
-int n2t_Ainstr_to_str(instr_t const in, char *const dest) {
-
+int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest) {
+	if (in.label[0] != '\0') {
+		// TO-DO snprintf() doesn't actually return the number of characters
+		// written.
+		return snprintf(dest, BUFFSIZE_MED, "@%s", in.label);
+	} else {
+		// TO-DO snprintf() doesn't actually return the number of characters
+		// written.
+		return snprintf(dest, BUFFSIZE_MED, "@%u", in.bits);
+	}
 }
 
-int n2t_Cinstr_to_str(instr_t const in, char *const dest) {
+int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest) {
+	short int const
+		dest_reg = n2t_get_dest(in),
+		comp = n2t_get_comp(in),
+		jump = n2t_get_jump(in);
 
+	// Write the dest part.
+	if (dest_reg < 0 || DEST_AMD < dest_reg) {
+		return 1;
+	} else if (dest_reg) {	// `0 < dest_reg <= 7 = DEST_AMD'.
+		strcat(dest, INDEX_TO_DEST[dest_reg]);
+		strcat(dest, "=");
+	}
+
+	// Write the comp part.
+	if (comp < 0 || COMP_MPLUS1 < comp) {
+		strcat(dest, INDEX_TO_COMP[comp]);
+	} else {
+		return 2;
+	}
+
+	// Write the jump part.
+	if (jump < 0 || JUMP_ALWAYS < jump) {
+		return 3;
+	} else if (jump) {	// `0 < jump <= 7 = JUMP_ALWAYS'.
+		strcat(dest, ";");
+		strcat(dest, INDEX_TO_JUMP[jump]);
+	}
+
+	return 0;
 }
 
 int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
