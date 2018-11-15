@@ -20,7 +20,7 @@ int main (int argc, char *argv[]) {
 			n2t_instr_to_str(s->tokens[i].data.instr, buff);
 			puts(buff);
 		} else if (s->tokens[i].type == LABEL) {
-			printf("%s\n", s->tokens[i].data.label.text_repr);
+			puts(s->tokens[i].data.label.text_repr);
 		}
 	}
 

@@ -27,7 +27,8 @@
 #define	COMP_MINUSD (8 + 4 + 2 + 1)
 #define	COMP_MINUSA (32 + 16 + 2 + 1)
 #define	COMP_DPLUS1 (16 + 8 + 4 + 2 + 1)
-#define	COMP_DMINUS1 (32 + 16 + 4 + 2 + 1)
+#define	COMP_APLUS1 (32 + 16 + 4 + 2 + 1)
+#define	COMP_DMINUS1 (8 + 4 + 2)
 #define	COMP_AMINUS1 (32 + 16 + 2)
 #define	COMP_DPLUSA (2)
 #define	COMP_DMINUSA (16 + 2 + 1)
@@ -121,16 +122,28 @@ typedef struct {
 int n2t_instr_to_bitstr(instr_t const in, char *const dest);
 /**
  * Converts an instruction `in' in its string representation.
+ *
+ * Returns: the total number of characters written to `dest', `-1' if an error
+ * occurred.
  */
 int n2t_instr_to_str(instr_t const in, char *const dest);
 /**
  * Converts an A-instruction `in' in its string representation.
+ *
+ * Returns: the total number of characters written to `dest', `-1' if an error
+ * occurred.
  */
-int n2t_Ainstr_to_str(instr_t const in, char *const dest);
+int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest);
 /**
- * Converts a C-instruction `in' in its string representation.
+ * Converts a C-instruction `in' in its string representation. The output will
+ * be deprived from whitespaces, what is called a "normalized" representation
+ * (in this project).
+ *
+ * Returns: `0' if no errors occur, `1' if an error verifies while writing the
+ * `dest' segment, `2' while writing the `comp' segment or `3' while writing
+ * the `jump' segment.
  */
-int n2t_Cinstr_to_str(instr_t const in, char *const dest);
+int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest);
 /**
  * Instantiates an `instr_t' structure from `str_repr', containing its
  * human-readable textual representation.
@@ -180,7 +193,18 @@ int n2t_set_dest(Cinstr_t *dest, int dest_reg);
  * possible combination of the three register.
  */
 // TO-DO Test
-int n2t_get_dest(Cinstr_t *in);
+int n2t_get_dest(Cinstr_t const in);
+/**
+ * Sets the comp condition of a C-instruction (to choose between any available
+ * expression, see the reference).
+ * 
+ * Returns: `1' if invalid arguments were supplied, `0' otherwise.
+ */
+int n2t_set_comp(Cinstr_t *in, short int comp_instr);
+/**
+ * Returns: the related `comp' code of a C-instruction.
+ */
+int n2t_get_comp(Cinstr_t const in);
 /**
  * Sets the jump condition of a C-instruction computation (to choose between
  * `JUMP_NONE' or `JUMP_GT', `JUMP_EQ', `JUMP_LT' or any or-ed expression
@@ -195,7 +219,7 @@ int n2t_set_jump(Cinstr_t *dest, int jump_cond);
  * combination up to `JUMP_ALWAYS'.
  */
 // TO-DO Test
-int n2t_get_jump(Cinstr_t *in);
+int n2t_get_jump(Cinstr_t const in);
 
 /**
  * Allocates data in the heap storage for `n' `token_t' instances, returning
