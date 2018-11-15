@@ -254,10 +254,6 @@ int n2t_str_to_label(char const *str_repr, label_t *dest) {
 	}
 }
 
-int n2t_tokenseq_full(tokenseq_t const *s) {
-	return s->last >= s->ntokens;
-}
-
 int n2t_set_dest(Cinstr_t *dest, int dest_reg) {
 	if (0 <= dest_reg && dest_reg < 8) {
 		*dest |= dest_reg << 3;
@@ -352,6 +348,10 @@ int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l) {
 	s->last++;
 
 	return 0;
+}
+
+int n2t_tokenseq_full(tokenseq_t const *s) {
+	return s->last >= s->ntokens;
 }
 
 void n2t_tokenseq_free(tokenseq_t *l) {
