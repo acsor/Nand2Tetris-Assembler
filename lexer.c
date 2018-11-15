@@ -224,7 +224,7 @@ int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 	n2t_collapse_any(comp_field, " \t", comp_field);
 
 	if ((comp_encoding = n2t_parse_cinstr_comp(comp_field)) > -1) {
-		dest->instr.c |= comp_encoding << 6;
+		n2t_set_comp(&dest->instr.c, comp_encoding);
 	} else {
 		return 2;
 	}
@@ -264,8 +264,25 @@ int n2t_set_dest(Cinstr_t *dest, int dest_reg) {
 	return 1;
 }
 
-int n2t_get_dest(Cinstr_t *in) {
-	return (*in && (7 << 3)) >> 3;
+int n2t_get_dest(Cinstr_t const in) {
+	return (in && (0x7 << 3)) >> 3;
+}
+
+int n2t_set_comp(Cinstr_t *in, short int comp_instr) {
+	if (
+		comp_instr < 0
+		|| COMP_MPLUS1 < comp_instr
+		|| !strcmp(INDEX_TO_COMP[comp_instr], "")
+    ) {
+		return 1;
+	} else {
+		*in |= comp_instr << 6;
+		return 0;
+	}
+}
+
+int n2t_get_comp(Cinstr_t in) {
+	return (in & (0x7F << 6)) >> 6;
 }
 
 int n2t_set_jump(Cinstr_t *dest, int jump_cond) {
@@ -278,8 +295,8 @@ int n2t_set_jump(Cinstr_t *dest, int jump_cond) {
 	}
 }
 
-int n2t_get_jump(Cinstr_t *in) {
-	return *in & 7;
+int n2t_get_jump(Cinstr_t in) {
+	return in & 0x7;
 }
 
 tokenseq_t* n2t_tokenseq_alloc(size_t n) {
