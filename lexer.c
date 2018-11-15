@@ -5,6 +5,68 @@
 #include <stdlib.h>
 
 
+static char const *INDEX_TO_DEST[] = {
+	"", "M", "D", "MD", "A", "AM", "AD", "AMD"
+};
+// A mapping from instruction codes (the `comp' fragment) to their normalized
+// textual representation.
+static char const *INDEX_TO_COMP[] = {
+	"D&A",	//0
+	"",
+	"D+A",	//2
+	"", "", "", "",
+	"A-D",	//7
+	"", "", "", "",
+	"D",	//12
+	"!D",	//12
+	"",
+	"-D",	//14
+	"", "", "",
+	"D-A",	//18
+	"",
+	"D|A",	//20
+	"", "", "", "", "", "",
+	"D-1",	//28
+	"", "",
+	"D+1",	//31
+	"", "", "", "", "", "", "", "", "", "",
+	"0",	//42
+	"", "", "", "", "",
+	"A",	//48
+	"!A",	//44
+	"A-1",	//45
+	"-A",	//46
+	"", "", "",
+	"A-1",	//50
+	"", "",
+	"-1",	//53
+	"",
+	"A+1",	//55
+	"", "",
+	"1",	//58
+	"D&M",	//59
+	"",
+	"D+M",	//61
+	"", "", "", "",
+	"M-D",	//66
+	"", "", "", "", "", "", "", "", "", "", "",
+	"D-M",	//83
+	"",
+	"D|M",	//?
+	"", "", "", "", "", "",
+	"M",	//?
+	"!M",	//?
+	"M-1",	//?
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	"",
+	"-M",	//?
+	"", "", "", "", "", "", "", "", "", "", "",
+	"M+1"	//?
+};
+static char const *INDEX_TO_JUMP[] = {
+	"", "JGT", "JEQ", "JGE", "JLT", "JNE", "JLE", "JMP"
+};
+
 /**
  * Parses the computation portion of a C-instruction.
  *
@@ -343,62 +405,11 @@ tokenseq_t* n2t_tokenize(const char *filepath) {
 }
 
 static int n2t_parse_cinstr_comp(char const *norm_repr) {
-	if (!strcmp(norm_repr, "0")) {
-		return 32 + 8 + 2;
-	} else if (!strcmp(norm_repr, "1")) {
-		return 63;
-	} else if (!strcmp(norm_repr, "-1")) {
-		return 32 + 16 + 8 + 2;
-	} else if (!strcmp(norm_repr, "D")) {
-		return 8 + 4;
-	} else if (!strcmp(norm_repr, "A")) {
-		return 32 + 16;
-	} else if (!strcmp(norm_repr, "!D")) {
-		return 8 + 4 + 1;
-	} else if (!strcmp(norm_repr, "!A")) {
-		return 32 + 16 + 1;
-	} else if (!strcmp(norm_repr, "-D")) {
-		return 8 + 4 + 2 + 1;
-	} else if (!strcmp(norm_repr, "-A")) {
-		return 32 + 16 + 2 + 1;
-	} else if (!strcmp(norm_repr, "D+1")) {
-		return 16 + 8 + 4 + 2 + 1;
-	} else if (!strcmp(norm_repr, "A+1")) {
-		return 32 + 16 + 4 + 2 + 1;
-	} else if (!strcmp(norm_repr, "D-1")) {
-		return 8 + 4 + 2;
-	} else if (!strcmp(norm_repr, "A-1")) {
-		return 32 + 16 + 2;
-	} else if (!strcmp(norm_repr, "D+A")) {
-		return 2;
-	} else if (!strcmp(norm_repr, "D-A")) {
-		return 16 + 2 + 1;
-	} else if (!strcmp(norm_repr, "A-D")) {
-		return 4 + 2 + 1;
-	} else if (!strcmp(norm_repr, "D&A")) {
-		return 0;
-	} else if (!strcmp(norm_repr, "D|A")) {
-		return 16 + 4 + 1;
-	} else if (!strcmp(norm_repr, "M")) {
-		return 64 + 32 + 16;
-	} else if (!strcmp(norm_repr, "!M")) {
-		return 64 + 32 + 16 + 1;
-	} else if (!strcmp(norm_repr, "-M")) {
-		return 64 + 32 + 16 + 2 + 1;
-	} else if (!strcmp(norm_repr, "M+1")) {
-		return 64 + 32 + 16 + 8 + 4 + 2;
-	} else if (!strcmp(norm_repr, "M-1")) {
-		return 64 + 32 + 16 + 2;
-	} else if (!strcmp(norm_repr, "D+M")) {
-		return 2;
-	} else if (!strcmp(norm_repr, "D-M")) {
-		return 16 + 2 + 1;
-	} else if (!strcmp(norm_repr, "M-D")) {
-		return 4 + 2 + 1;
-	} else if (!strcmp(norm_repr, "D&M")) {
-		return 64;
-	} else if (!strcmp(norm_repr, "D|M")) {
-		return 64 + 16 + 4 + 1;
+	size_t i;
+
+	for (i = 0; i <= COMP_MPLUS1; i++) {
+		if (!strcmp(norm_repr, INDEX_TO_COMP[i]))
+			return i;
 	}
 
 	return -1;
