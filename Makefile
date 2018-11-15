@@ -23,4 +23,4 @@ utils.o: utils.c utils.h
 
 
 clear:
-	rm assembler *.o *.out
+	rm assembler *.o *.out *.gch
