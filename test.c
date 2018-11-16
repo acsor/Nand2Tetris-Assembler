@@ -14,8 +14,7 @@ int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite);
 
 // lexer.h
 int test_n2t_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
-int test_n2t_str_to_instr(void *const args, char errmsg[], size_t maxwrite);
-int test_n2t_set_dest(instr_t *dest, int dest_reg);
+
 
 typedef int (*test_function)(void*, char[], size_t);
 
@@ -147,7 +146,7 @@ int test_n2t_replace_any(void *const args, char errmsg[], size_t maxwrite) {
 	for (i = 0; i < sizeof(exp_outputs) / sizeof(char*); i++) {
 		n2t_replace_any(input, old[i], new, buff);
 
-		if (strncmp(exp_outputs[i], buff, BUFFSIZE_MED)) {
+		if (strcmp(exp_outputs[i], buff)) {
 			return 1;
 		}
 	}
@@ -156,13 +155,14 @@ int test_n2t_replace_any(void *const args, char errmsg[], size_t maxwrite) {
 }
 
 int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite) {
-	char const *input = "abc def ghi jkl";
+	char const *input = "abc def ghi jkl \n\t\r\v";
 	char const *old[] = {
-		"abc", "def", "ghi", "jkl", " ", "abcdefghijkl "
+		"abc", "def", "ghi", "jkl", " ", "abcdefghijkl\n\t\r\v "
 	};
 	char const *exp_outputs[] = {
-		" def ghi jkl", "abc  ghi jkl", "abc def  jkl",
-		"abc def ghi ", "abcdefghijkl", ""
+		" def ghi jkl \n\t\r\v", "abc  ghi jkl \n\t\r\v",
+		"abc def  jkl \n\t\r\v", "abc def ghi  \n\t\r\v",
+		"abcdefghijkl\n\t\r\v", ""
 	};
 	char buff[BUFFSIZE_MED];
 	size_t i;
