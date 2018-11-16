@@ -25,7 +25,7 @@ int n2t_collapse_any(char const *source, char const *old, char *dest) {
 	size_t sourcepos = 0, destpos = 0;
 
 	while (source[sourcepos] != '\0') {
-		if (!index(old, source[sourcepos])) {
+		if (index(old, source[sourcepos]) == NULL) {
 			dest[destpos] = source[sourcepos];
 			destpos++;
 		}
