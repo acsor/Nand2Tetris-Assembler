@@ -127,14 +127,14 @@ int n2t_instr_to_bitstr(instr_t const in, char *const dest);
  * `n2t_Cinstr_to_str()', or `-1' if an error occurs before delegating the
  * call.
  */
-int n2t_instr_to_str(instr_t const in, char *const dest);
+int n2t_instr_to_str(instr_t const in, char *const dest, size_t maxwrite);
 /**
  * Converts an A-instruction `in' in its string representation.
  *
  * Returns: the total number of characters written to `dest', `-1' if an error
  * occurred.
  */
-int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest);
+int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite);
 /**
  * Converts a C-instruction `in' in its string representation. The output will
  * be deprived from whitespaces, what is called a "normalized" representation
@@ -144,7 +144,7 @@ int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest);
  * `dest' segment, `2' while writing the `comp' segment or `3' while writing
  * the `jump' segment.
  */
-int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest);
+int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest, size_t maxwrite);
 /**
  * Instantiates an `instr_t' structure from `str_repr', containing its
  * human-readable textual representation.
