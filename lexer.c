@@ -124,6 +124,8 @@ int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest, size_t maxwrite) {
 		dest_reg = n2t_get_dest(in),
 		comp = n2t_get_comp(in),
 		jump = n2t_get_jump(in);
+	
+	dest[0] = '\0';
 
 	// Write the dest part.
 	if (dest_reg < 0 || DEST_AMD < dest_reg) {

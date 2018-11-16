@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "lexer.h"
 #include "utils.h"
 
@@ -14,6 +15,18 @@ int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite);
 
 // lexer.h
 int test_n2t_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
+/**
+ * Reads a filepath from `args', interpreting it as an .asm file to parse,
+ * interpret, translate and confront with the original input.
+ */
+int test_back_translation(void *const args, char errmsg[], size_t maxwrite);
+/**
+ * Picks a selection of .asm files, reading, interpreting and retranslating
+ * them, checking that the original and the computed instructions match.
+ *
+ * Invokes `test_back_translation()' as a subroutine.
+ */
+int test_batch_back_translation(void *const args, char errmsg[], size_t maxwrite);
 
 
 typedef int (*test_function)(void*, char[], size_t);
@@ -24,13 +37,13 @@ int main (int argc, char *argv[]) {
 		test_n2t_strip, test_n2t_composed_of, test_n2t_decomment,
 		test_n2t_replace_any, test_n2t_collapse_any,
 
-		test_n2t_instr_to_bitstr
+		test_n2t_instr_to_bitstr, test_batch_back_translation
 	};
 	char *test_names[] = {
 		"test_n2t_strip", "test_n2t_composed_of", "test_n2t_decomment",
 		"test_n2t_replace_any", "test_n2t_collapse_any",
 
-		"test_n2t_instr_to_bitstr"
+		"test_n2t_instr_to_bitstr", "test_batch_back_translation"
 	};
 	char errmsg[BUFFSIZE_VLARGE];
 	size_t const tests_no = sizeof(tests) / sizeof(test_function);
@@ -215,6 +228,105 @@ int test_n2t_instr_to_bitstr(
 		if (strncmp(exp_outputs[i], output, buffsize))
 			return 1;
 	}
+
+	return 0;
+}
+
+int test_batch_back_translation(void *const args, char errmsg[], size_t maxwrite) {
+	char const *filenames[] = {
+		"Pong.asm", "PongL.asm",
+		// TO-DO Does a higher load lead this test to fail?
+		// "Rect.asm", "RectL.asm", "Add.asm", "Max.asm", "MaxL.asm", 
+	};
+	char const *test_dir = "test_fixtures/test_batch_back_translation/";
+	char filepath[BUFFSIZE_LARGE];
+	size_t i;
+
+	for (i = 0; i < sizeof(filenames) / sizeof(char*); i++) {
+		strncpy(filepath, test_dir, BUFFSIZE_LARGE);
+		strncat(filepath, filenames[i], BUFFSIZE_LARGE - strlen(filepath));
+
+		if (test_back_translation(filepath, errmsg, maxwrite)) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
+	char const *filepath = args;
+	char exp_repr[BUFFSIZE_LARGE],
+		 actual_repr[BUFFSIZE_LARGE];
+	FILE *expected;
+	tokenseq_t *s;
+	size_t i = 0;
+
+	if ((expected = fopen(filepath, "rt")) == NULL) {
+		snprintf(errmsg, maxwrite, "Error while opening `%s': ", filepath);
+		strncat(errmsg, strerror(errno), maxwrite - strlen(errmsg));
+
+		return 1;
+	}
+
+	if ((s = n2t_tokenize(filepath)) == NULL) {
+		fclose(expected);
+		snprintf(errmsg, maxwrite, "Error while tokenizing `%s'.", filepath);
+
+		return 1;
+	}
+
+	while (i < s->last && fgets(exp_repr, BUFFSIZE_LARGE, expected)) {
+		n2t_strip(exp_repr, exp_repr);
+
+		if (s->tokens[i].type == INSTR) {
+			n2t_instr_to_str(
+				s->tokens[i].data.instr, actual_repr, BUFFSIZE_LARGE
+			);
+		} else if (s->tokens[i].type == LABEL) {
+			strncpy(
+				actual_repr, s->tokens[i].data.label.text_repr, BUFFSIZE_LARGE
+			);
+		} else {
+			n2t_tokenseq_free(s);
+			fclose(expected);
+			snprintf(
+				errmsg, maxwrite,
+				"Error while translating token %lu: type %u not recognized.",
+				i, s->tokens[i].type
+			);
+
+			return 1;
+		}
+
+		if (strncmp(exp_repr, actual_repr, BUFFSIZE_LARGE)) {
+			n2t_tokenseq_free(s);
+			fclose(expected);
+
+			snprintf(
+				errmsg, maxwrite,
+				"%s:%lu: `%s' was expected, but `%s' was produced.", filepath,
+				i, exp_repr, actual_repr
+			);
+
+			return 1;
+		}
+
+		i++;
+	}
+
+	if (i != s->last) {
+		snprintf(
+			errmsg, maxwrite,
+			"%s: the number of tokens expected (%lu) differs from the actual one (%lu).\n",
+			filepath, i, s->last
+		);
+
+		return 1;
+	}
+
+	n2t_tokenseq_free(s);
+	fclose(expected);
 
 	return 0;
 }
