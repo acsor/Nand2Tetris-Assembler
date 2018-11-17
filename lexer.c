@@ -109,12 +109,8 @@ int n2t_instr_to_str(instr_t const in, char *const dest, size_t maxwrite) {
 
 int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite) {
 	if (in.label[0] != '\0') {
-		// TO-DO snprintf() doesn't actually return the number of characters
-		// written.
 		return snprintf(dest, maxwrite, "@%s", in.label);
 	} else {
-		// TO-DO snprintf() doesn't actually return the number of characters
-		// written.
 		return snprintf(dest, maxwrite, "@%u", in.bits);
 	}
 }
