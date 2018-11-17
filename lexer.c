@@ -75,15 +75,16 @@ static char const *INDEX_TO_JUMP[] = {
  * Parses the computation portion of a C-instruction.
  *
  * Param `norm_repr': a normalized representation for this ALU instruction.
- * Returns: the integer value associated to the ALU instruction or `-1' if no
- * correct parsing could be performed.
+ * Returns: the integer value associated to the ALU instruction or `COMP_ERROR'
+ * if no correct parsing could be performed.
  */
-static int n2t_parse_cinstr_comp(char const *norm_repr);
+static word_t n2t_parse_cinstr_comp(char const *norm_repr);
 
 
 int n2t_instr_to_bitstr(instr_t const in, char *const dest) {
-	int bitmask = 1 << 15, i = 0;
-	short int const bits = (in.type == A) ? in.instr.a.bits: in.instr.c;
+	word_t bitmask = 1 << 15,
+		   i = 0;
+	word_t const bits = (in.type == A) ? in.instr.a.bits: in.instr.c;
 
 	while (bitmask > 0 && i < 16) {
 		dest[i] = bits & bitmask ? '1': '0';
@@ -116,7 +117,7 @@ int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite) {
 }
 
 int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest, size_t maxwrite) {
-	short int const
+	word_t const
 		dest_reg = n2t_get_dest(in),
 		comp = n2t_get_comp(in),
 		jump = n2t_get_jump(in);
@@ -197,7 +198,7 @@ int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 		*const dest_field_tail = index(norm_repr, '='),
 		*const jump_field_head = index(norm_repr, ';');
 	char comp_field[strlen(norm_repr) + 1];
-	int comp_encoding;
+	word_t comp_encoding;
 	size_t dest_offset = 0;
 
 	char parsed_dest[4] = "   ";
@@ -267,9 +268,9 @@ int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 		*index(comp_field, ';') = '\0';
 
 	n2t_strip(comp_field, comp_field);
-	n2t_collapse_any(comp_field, " \t", comp_field);
+	n2t_collapse_any(comp_field, " \t\n", comp_field);
 
-	if ((comp_encoding = n2t_parse_cinstr_comp(comp_field)) > -1) {
+	if ((comp_encoding = n2t_parse_cinstr_comp(comp_field)) != COMP_ERROR) {
 		n2t_set_comp(&dest->instr.c, comp_encoding);
 	} else {
 		return 2;
@@ -301,7 +302,7 @@ int n2t_str_to_label(char const *str_repr, label_t *dest) {
 	}
 }
 
-int n2t_set_dest(Cinstr_t *dest, int dest_reg) {
+int n2t_set_dest(Cinstr_t *dest, word_t dest_reg) {
 	if (DEST_NONE <= dest_reg && dest_reg <= DEST_AMD) {
 		*dest |= dest_reg << 3;
 
@@ -311,11 +312,11 @@ int n2t_set_dest(Cinstr_t *dest, int dest_reg) {
 	return 1;
 }
 
-int n2t_get_dest(Cinstr_t const in) {
+word_t n2t_get_dest(Cinstr_t const in) {
 	return (in & (0x7 << 3)) >> 3;
 }
 
-int n2t_set_comp(Cinstr_t *in, short int comp_instr) {
+int n2t_set_comp(Cinstr_t *in, word_t comp_instr) {
 	if (
 		comp_instr < 0
 		|| COMP_MPLUS1 < comp_instr
@@ -328,11 +329,11 @@ int n2t_set_comp(Cinstr_t *in, short int comp_instr) {
 	}
 }
 
-int n2t_get_comp(Cinstr_t in) {
+word_t n2t_get_comp(Cinstr_t in) {
 	return (in & (0x7F << 6)) >> 6;
 }
 
-int n2t_set_jump(Cinstr_t *dest, int jump_cond) {
+int n2t_set_jump(Cinstr_t *dest, word_t jump_cond) {
 	if (JUMP_NONE <= jump_cond && jump_cond <= JUMP_ALWAYS) {
 		*dest |= jump_cond;
 
@@ -342,7 +343,7 @@ int n2t_set_jump(Cinstr_t *dest, int jump_cond) {
 	}
 }
 
-int n2t_get_jump(Cinstr_t in) {
+word_t n2t_get_jump(Cinstr_t in) {
 	return in & 0x7;
 }
 
@@ -473,13 +474,13 @@ tokenseq_t* n2t_tokenize(const char *filepath) {
 	return seq;
 }
 
-static int n2t_parse_cinstr_comp(char const *norm_repr) {
+static word_t n2t_parse_cinstr_comp(char const *norm_repr) {
 	size_t i;
 
 	for (i = 0; i <= COMP_MPLUS1; i++) {
-		if (!strcmp(norm_repr, INDEX_TO_COMP[i]))
+		if (strcmp(norm_repr, INDEX_TO_COMP[i]) == 0)
 			return i;
 	}
 
-	return -1;
+	return COMP_ERROR;
 }

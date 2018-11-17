@@ -306,7 +306,7 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 			snprintf(
 				errmsg, maxwrite,
 				"%s:%lu: `%s' was expected, but `%s' was produced.", filepath,
-				i, exp_repr, actual_repr
+				i + 1, exp_repr, actual_repr
 			);
 
 			return 1;

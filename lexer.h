@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include <stdlib.h>
+#include <stdint.h>
 
 
 #define SYM_EQ		'='
@@ -45,6 +46,8 @@
 #define	COMP_MMINUSD (64 + 4 + 2 + 1)
 #define	COMP_DANDM (64)
 #define	COMP_DORM (64 + 16 + 4 + 1)
+// Used to signal errors on return values, e.g.
+#define COMP_ERROR (64 + 32 + 16 + 8 + 4 + 2 + 1)
 
 #define JUMP_NONE 0
 #define JUMP_GT 1
@@ -55,23 +58,25 @@
 #define JUMP_LE 6
 #define JUMP_ALWAYS 7
 
+// A word in the Hack architecture is 16 bits, that we assing here once and for
+// all.
+typedef uint16_t word_t;
+
 typedef enum {
 	A = 0, C
 } instr_type_t;
 
 typedef struct {
-	short int bits;
+	word_t bits;
 	// Name of the label, if any, that this A instruction was initially read
 	// with.
 	char label[BUFFSIZE_MED];
 	// Lexer hint for whether this struct instance has been initialized
 	// during the first parsing phase, or should be filled in later.
-	short int loaded;
+	uint8_t loaded;
 } Ainstr_t;
 
-// TO-DO Make sure to employ a data type which has a width of two bytes
-// cross-platform.
-typedef short int Cinstr_t;
+typedef word_t Cinstr_t;
 
 // Unfortunately, I can't say how space-efficient such a solution can be.
 typedef struct {
@@ -90,9 +95,9 @@ typedef enum {
 typedef struct {
 	char text_repr[BUFFSIZE_MED];
 	// The memory location which this label is a symbol for.
-	unsigned short int location;
+	uint16_t location;
 	// Whether the `location' value of this instance has been set.
-	short int loaded;
+	uint8_t loaded;
 } label_t;
 
 typedef struct {
@@ -131,8 +136,8 @@ int n2t_instr_to_str(instr_t const in, char *const dest, size_t maxwrite);
 /**
  * Converts an A-instruction `in' in its string representation.
  *
- * Returns: the total number of characters written to `dest', `-1' if an error
- * occurred.
+ * Returns: the total number of characters written to `dest', or `-1' if an
+ * error occurred.
  */
 int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite);
 /**
@@ -186,7 +191,7 @@ int n2t_str_to_label(char const *str_repr, label_t *dest);
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
 // TO-DO Test
-int n2t_set_dest(Cinstr_t *dest, int dest_reg);
+int n2t_set_dest(Cinstr_t *dest, word_t dest_reg);
 /**
  * Retrieves the destinationn register(s) of a C-instruction computation.
  *
@@ -194,18 +199,18 @@ int n2t_set_dest(Cinstr_t *dest, int dest_reg);
  * possible combination of the three register.
  */
 // TO-DO Test
-int n2t_get_dest(Cinstr_t const in);
+word_t n2t_get_dest(Cinstr_t const in);
 /**
  * Sets the comp condition of a C-instruction (to choose between any available
  * expression, see the reference).
  * 
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
-int n2t_set_comp(Cinstr_t *in, short int comp_instr);
+int n2t_set_comp(Cinstr_t *in, word_t comp_instr);
 /**
  * Returns: the related `comp' code of a C-instruction.
  */
-int n2t_get_comp(Cinstr_t const in);
+word_t n2t_get_comp(Cinstr_t const in);
 /**
  * Sets the jump condition of a C-instruction computation (to choose between
  * `JUMP_NONE' or `JUMP_GT', `JUMP_EQ', `JUMP_LT' or any or-ed expression
@@ -214,13 +219,13 @@ int n2t_get_comp(Cinstr_t const in);
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
 // TO-DO Test
-int n2t_set_jump(Cinstr_t *dest, int jump_cond);
+int n2t_set_jump(Cinstr_t *dest, word_t jump_cond);
 /**
  * Returns: `JUMP_NONE', `JUMP_GT', `JUMP_EQ', `JUMP_GE', ..., or any other
  * combination up to `JUMP_ALWAYS'.
  */
 // TO-DO Test
-int n2t_get_jump(Cinstr_t const in);
+word_t n2t_get_jump(Cinstr_t const in);
 
 /**
  * Allocates data in the heap storage for `n' `token_t' instances, returning
