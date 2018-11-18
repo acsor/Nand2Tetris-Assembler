@@ -1,6 +1,7 @@
 # Nand2Tetris Assembler
-Part five of the [Nand2tetris](http://nand2tetris.org/) set of assignments,
-this subproject implements an assembler for the Hack computer.
+[Part six](https://www.nand2tetris.org/project06) of the
+[Nand2tetris](http://nand2tetris.org/) set of assignments, this subproject
+implements an assembler for the Hack computer.
 
 ## Building
 Move to the source directory and type:
