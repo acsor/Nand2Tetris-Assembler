@@ -92,6 +92,7 @@ typedef enum {
 	INSTR = 0, LABEL
 } token_type;
 
+#define LABEL_CHARSET "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.$_0123456789"
 typedef struct {
 	char text_repr[BUFFSIZE_MED];
 	// The memory location which this label is a symbol for.

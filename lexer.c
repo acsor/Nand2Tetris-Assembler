@@ -174,13 +174,15 @@ int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
 		dest->instr.a.bits = atoi(norm_repr + 1);
 		dest->instr.a.loaded = 1;
 	} else if (	// @R0, @R1, ..., @R15
+		// TO-DO The condition below allows values such as `@R01', `@R02',
+		// ..., `@R0X'. Fix it.
 		norm_repr[1] == 'R' && n2t_is_numeric(norm_repr + 2) &&\
 		atoi(norm_repr + 2) < 16
 	) {
 		strncpy(dest->instr.a.label, norm_repr + 1, BUFFSIZE_MED);
 		dest->instr.a.bits = atoi(norm_repr + 2);
 		dest->instr.a.loaded = 1;
-	} else if (n2t_is_alpha(norm_repr + 1, ".$_0123456789")) {
+	} else if (n2t_composed_of(norm_repr + 1, LABEL_CHARSET)) {
 		// @LABEL, @label, @...
 		strncpy(dest->instr.a.label, norm_repr + 1, BUFFSIZE_MED);
 		dest->instr.a.loaded = 0;
@@ -195,8 +197,8 @@ int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
 
 int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 	char const
-		*const dest_field_tail = index(norm_repr, '='),
-		*const jump_field_head = index(norm_repr, ';');
+		*const dest_field_tail = index(norm_repr, SYM_EQ),
+		*const jump_field_head = index(norm_repr, SYM_SEMIC);
 	char comp_field[strlen(norm_repr) + 1];
 	word_t comp_encoding;
 	size_t dest_offset = 0;
@@ -207,7 +209,8 @@ int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 	dest->instr.c = 0;
 
 	// Parse the `dest' part.
-	// If '=' was not found in `norm_repr', `dest_field_tail' will be `NULL'.
+	// If '=' = SYM_EQ was not found in `norm_repr', `dest_field_tail' will be
+	// `NULL'.
 	while (norm_repr + dest_offset < dest_field_tail) {
 		if (!IS_SPACE(norm_repr[dest_offset])) {
 			if (index(parsed_dest, norm_repr[dest_offset])) {
@@ -265,7 +268,7 @@ int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 		strcpy(comp_field, norm_repr);
 
 	if (jump_field_head)
-		*index(comp_field, ';') = '\0';
+		*index(comp_field, SYM_SEMIC) = '\0';
 
 	n2t_strip(comp_field, comp_field);
 	n2t_collapse_any(comp_field, " \t\n", comp_field);
@@ -293,7 +296,7 @@ int n2t_str_to_label(char const *str_repr, label_t *dest) {
 	strncpy(copy, str_repr + 1, len - 2);
 	copy[len - 2] = '\0';
 
-	if (n2t_is_alpha(copy, ".$_0123456789")) {
+	if (n2t_composed_of(copy, LABEL_CHARSET)) {
 		strncpy(dest->text_repr, str_repr, BUFFSIZE_MED);
 		dest->loaded = 0;
 
