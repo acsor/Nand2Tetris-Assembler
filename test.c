@@ -234,9 +234,8 @@ int test_n2t_instr_to_bitstr(
 
 int test_batch_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 	char const *filenames[] = {
-		"Pong.asm", "PongL.asm",
-		// TO-DO Does a higher load lead this test to fail?
-		// "Rect.asm", "RectL.asm", "Add.asm", "Max.asm", "MaxL.asm", 
+		"Add.asm", "Max.asm", "MaxL.asm", "Pong.asm", "PongL.asm", "Rect.asm", 
+		"RectL.asm", 
 	};
 	char const *test_dir = "test_fixtures/test_batch_back_translation/";
 	char filepath[BUFFSIZE_LARGE];

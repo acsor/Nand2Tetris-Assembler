@@ -437,6 +437,9 @@ tokenseq_t* n2t_tokenize(const char *filepath) {
 	instr_t i;
 	label_t l;
 
+	memset(&i, 0, sizeof(instr_t));
+	memset(&l, 0, sizeof(instr_t));
+
 	if ((fin = fopen(filepath, "r")) == NULL) {
 		return NULL;
 	}
