@@ -187,7 +187,7 @@ int n2t_str_to_instr(char const *str_repr, instr_t *dest);
  *
  * Returns: `1' if an error occurs, `0' otherwise.
  */
-int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest);
+int n2t_str_to_Ainstr(char const *norm_repr, instr_t *dest);
 /**
  * Param `norm_repr': a normalized representation for the C instruction.
  * Param `dest': `instr_t' variable on which to store the decoded instruction.
@@ -195,7 +195,7 @@ int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest);
  * Returns: `1' if an error occurs parsing the `dest' portion, `2' parsing the
  * `comp' portion and `3' if parsing the `jump' portion, `0' otherwise.
  */
-int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest);
+int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest);
 /**
  * Instantiates an `label_t' variable from `str_repr', containing its
  * human-readable textual representation.
@@ -275,7 +275,6 @@ int n2t_tokenseq_full(tokenseq_t const *s);
  * Frees up the dynamic data previously allocated for a `tokenseq_t' structure.
  */
 void n2t_tokenseq_free(tokenseq_t *l);
-
 /**
  * Comments and new lines are ignored.
  *

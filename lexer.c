@@ -100,7 +100,7 @@ static char const *INDEX_TO_JUMP[] = {
  * Returns: the integer value associated to the ALU instruction or `COMP_ERROR'
  * if no correct parsing could be performed.
  */
-static word_t n2t_parse_cinstr_comp(char const *norm_repr);
+static word_t n2t_parse_Cinstr_comp(char const *norm_repr);
 
 
 int n2t_instr_to_bitstr(instr_t const in, char *const dest) {
@@ -180,13 +180,13 @@ int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
 	}
 
 	if (normalized[0] == '@') {
-		return n2t_str_to_ainstr(normalized, dest);
+		return n2t_str_to_Ainstr(normalized, dest);
 	} else {
-		return n2t_str_to_cinstr(normalized, dest);
+		return n2t_str_to_Cinstr(normalized, dest);
 	}
 }
 
-int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
+int n2t_str_to_Ainstr(char const *norm_repr, instr_t *dest) {
 	if (norm_repr[0] != '@') {
 		return 1;	// Not an A-instruction.
 	}
@@ -217,7 +217,7 @@ int n2t_str_to_ainstr(char const *norm_repr, instr_t *dest) {
 	return 0;
 }
 
-int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
+int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest) {
 	char const
 		*const dest_field_tail = index(norm_repr, SYM_EQ),
 		*const jump_field_head = index(norm_repr, SYM_SEMIC);
@@ -295,7 +295,7 @@ int n2t_str_to_cinstr(char const *const norm_repr, instr_t *dest) {
 	n2t_strip(comp_field, comp_field);
 	n2t_collapse_any(comp_field, " \t\n", comp_field);
 
-	if ((comp_encoding = n2t_parse_cinstr_comp(comp_field)) != COMP_ERROR) {
+	if ((comp_encoding = n2t_parse_Cinstr_comp(comp_field)) != COMP_ERROR) {
 		n2t_set_comp(&dest->instr.c, comp_encoding);
 	} else {
 		return 2;
@@ -503,7 +503,7 @@ tokenseq_t* n2t_tokenize(const char *filepath) {
 	return seq;
 }
 
-static word_t n2t_parse_cinstr_comp(char const *norm_repr) {
+static word_t n2t_parse_Cinstr_comp(char const *norm_repr) {
 	size_t i;
 
 	for (i = 0; i <= COMP_MPLUS1; i++) {
