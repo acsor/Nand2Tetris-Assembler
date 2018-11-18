@@ -295,6 +295,7 @@ int n2t_str_to_label(char const *str_repr, label_t *dest) {
 
 	if (n2t_is_alpha(copy, ".$_0123456789")) {
 		strncpy(dest->text_repr, str_repr, BUFFSIZE_MED);
+		dest->loaded = 0;
 
 		return 0;
 	} else {
