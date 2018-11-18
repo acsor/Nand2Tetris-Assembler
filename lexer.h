@@ -134,7 +134,7 @@ typedef struct {
 typedef struct {
 	token_t *tokens;
 	// Index of the next `token_t' to be written.
-	size_t last;
+	size_t next;
 	size_t ntokens;
 } tokenseq_t;
 
@@ -266,9 +266,9 @@ int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const in);
 int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l);
 /**
  * Returns: `1' if `s' can not contain any more `token_t's, `0' otherwise.
- * Note that for a `tokenseq_t' variable `s', `s->last' points to the NEXT
- * `token_t' to be dealt with. Hence, with `20' elements and `s->last == 19',
- * `s' is NOT considered to be full (it will when `s->last >= 20').
+ * Note that for a `tokenseq_t' variable `s', `s->next' points to the NEXT
+ * `token_t' to be dealt with. Hence, with `20' elements and `s->next == 19',
+ * `s' is NOT considered to be full (it will when `s->next >= 20').
  */
 int n2t_tokenseq_full(tokenseq_t const *s);
 /**

@@ -390,7 +390,7 @@ tokenseq_t* n2t_tokenseq_alloc(size_t n) {
 	}
 
 	o->ntokens = n;
-	o->last = 0;
+	o->next = 0;
 
 	return o;
 }
@@ -417,17 +417,17 @@ int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const in) {
 		return 1;
 
 	if (in.type == A) {
-		s->tokens[s->last].data.instr.instr.a = in.instr.a;
-		s->tokens[s->last].data.instr.type = A;
+		s->tokens[s->next].data.instr.instr.a = in.instr.a;
+		s->tokens[s->next].data.instr.type = A;
 	} else if (in.type == C) {
-		s->tokens[s->last].data.instr.instr.c = in.instr.c;
-		s->tokens[s->last].data.instr.type = C;
+		s->tokens[s->next].data.instr.instr.c = in.instr.c;
+		s->tokens[s->next].data.instr.type = C;
 	} else {
 		return 1;
 	}
-	s->tokens[s->last].type = INSTR;
+	s->tokens[s->next].type = INSTR;
 
-	s->last++;
+	s->next++;
 
 	return 0;
 }
@@ -437,17 +437,17 @@ int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l) {
 		return 1;
 
 	strncpy(
-		s->tokens[s->last].data.label.text_repr, l.text_repr, BUFFSIZE_MED
+		s->tokens[s->next].data.label.text_repr, l.text_repr, BUFFSIZE_MED
 	);
-	s->tokens[s->last].data.label.location = l.location;
-	s->tokens[s->last].type = LABEL;
-	s->last++;
+	s->tokens[s->next].data.label.location = l.location;
+	s->tokens[s->next].type = LABEL;
+	s->next++;
 
 	return 0;
 }
 
 int n2t_tokenseq_full(tokenseq_t const *s) {
-	return s->last >= s->ntokens;
+	return s->next >= s->ntokens;
 }
 
 void n2t_tokenseq_free(tokenseq_t *l) {

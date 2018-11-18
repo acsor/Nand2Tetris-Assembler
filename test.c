@@ -297,7 +297,7 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 		return 1;
 	}
 
-	while (i < s->last && fgets(exp_repr, BUFFSIZE_LARGE, expected)) {
+	while (i < s->next && fgets(exp_repr, BUFFSIZE_LARGE, expected)) {
 		n2t_strip(exp_repr, exp_repr);
 
 		if (s->tokens[i].type == INSTR) {
@@ -336,11 +336,11 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 		i++;
 	}
 
-	if (i != s->last) {
+	if (i != s->next) {
 		snprintf(
 			errmsg, maxwrite,
 			"%s: the number of tokens expected (%lu) differs from the actual one (%lu).\n",
-			filepath, i, s->last
+			filepath, i, s->next
 		);
 
 		return 1;

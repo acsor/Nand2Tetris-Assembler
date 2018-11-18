@@ -37,7 +37,7 @@ int main (int argc, char *argv[]) {
 
 	s = n2t_tokenize(argv[1]);
 
-	for (i = 0; i < s->last; i++) {
+	for (i = 0; i < s->next; i++) {
 		if (s->tokens[i].type == INSTR) {
 			n2t_instr_to_str(s->tokens[i].data.instr, buff);
 			puts(buff);
