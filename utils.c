@@ -85,9 +85,10 @@ int n2t_is_whitespace(char const *s) {
 }
 
 int n2t_is_alpha(char const *source, char const *extra) {
-	char charset[strlen(source) + strlen(extra) + 1];
+	char charset[strlen(ASCII_LETTERS) + strlen(extra) + 1];
 
-	strcpy(charset, source);
+	charset[0] = '\0';
+	strcpy(charset, ASCII_LETTERS);
 	strcat(charset, extra);
 
 	return n2t_composed_of(source, charset);
