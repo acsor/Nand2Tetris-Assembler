@@ -103,6 +103,20 @@ static char const *INDEX_TO_JUMP[] = {
 static word_t n2t_parse_Cinstr_comp(char const *norm_repr);
 
 
+int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
+	char normalized[strlen(str_repr) + 1];
+
+	if (n2t_strip(str_repr, normalized)) {
+		return 1;
+	}
+
+	if (normalized[0] == '@') {
+		return n2t_str_to_Ainstr(normalized, dest);
+	} else {
+		return n2t_str_to_Cinstr(normalized, dest);
+	}
+}
+
 int n2t_instr_to_bitstr(instr_t const in, char *const dest) {
 	word_t bitmask = 1 << 15,
 		   i = 0;
@@ -130,61 +144,6 @@ int n2t_instr_to_str(instr_t const in, char *const dest, size_t maxwrite) {
 	}
 }
 
-int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite) {
-	if (in.label[0] != '\0') {
-		return snprintf(dest, maxwrite, "@%s", in.label);
-	} else {
-		return snprintf(dest, maxwrite, "@%u", in.bits);
-	}
-}
-
-int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest, size_t maxwrite) {
-	word_t const
-		dest_reg = n2t_get_dest(in),
-		comp = n2t_get_comp(in),
-		jump = n2t_get_jump(in);
-	
-	dest[0] = '\0';
-
-	// Write the dest part.
-	if (dest_reg < 0 || DEST_AMD < dest_reg) {
-		return 1;
-	} else if (dest_reg) {	// `0 < dest_reg <= 7 = DEST_AMD'.
-		strncat(dest, INDEX_TO_DEST[dest_reg], maxwrite);
-		strncat(dest, "=", maxwrite);
-	}
-
-	// Write the comp part.
-	if (comp < 0 || COMP_MPLUS1 < comp) {
-		return 2;
-	} else {
-		strncat(dest, INDEX_TO_COMP[comp], maxwrite);
-	}
-
-	// Write the jump part.
-	if (jump < 0 || JUMP_ALWAYS < jump) {
-		return 3;
-	} else if (jump) {	// `0 < jump <= 7 = JUMP_ALWAYS'.
-		strncat(dest, ";", maxwrite);
-		strncat(dest, INDEX_TO_JUMP[jump], maxwrite);
-	}
-
-	return 0;
-}
-
-int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
-	char normalized[strlen(str_repr) + 1];
-
-	if (n2t_strip(str_repr, normalized)) {
-		return 1;
-	}
-
-	if (normalized[0] == '@') {
-		return n2t_str_to_Ainstr(normalized, dest);
-	} else {
-		return n2t_str_to_Cinstr(normalized, dest);
-	}
-}
 
 int n2t_str_to_Ainstr(char const *norm_repr, instr_t *dest) {
 	if (norm_repr[0] != '@') {
@@ -216,6 +175,15 @@ int n2t_str_to_Ainstr(char const *norm_repr, instr_t *dest) {
 
 	return 0;
 }
+
+int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite) {
+	if (in.label[0] != '\0') {
+		return snprintf(dest, maxwrite, "@%s", in.label);
+	} else {
+		return snprintf(dest, maxwrite, "@%u", in.bits);
+	}
+}
+
 
 int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest) {
 	char const
@@ -307,25 +275,38 @@ int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest) {
 	return 0;
 }
 
-int n2t_str_to_label(char const *str_repr, label_t *dest) {
-	size_t const len = strlen(str_repr);
-	char copy[len - 1];
+int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest, size_t maxwrite) {
+	word_t const
+		dest_reg = n2t_get_dest(in),
+		comp = n2t_get_comp(in),
+		jump = n2t_get_jump(in);
+	
+	dest[0] = '\0';
 
-	if (str_repr[0] != '(' || str_repr[len - 1] != ')') {
+	// Write the dest part.
+	if (dest_reg < 0 || DEST_AMD < dest_reg) {
 		return 1;
+	} else if (dest_reg) {	// `0 < dest_reg <= 7 = DEST_AMD'.
+		strncat(dest, INDEX_TO_DEST[dest_reg], maxwrite);
+		strncat(dest, "=", maxwrite);
 	}
 
-	strncpy(copy, str_repr + 1, len - 2);
-	copy[len - 2] = '\0';
-
-	if (n2t_composed_of(copy, LABEL_CHARSET)) {
-		strncpy(dest->text_repr, str_repr, BUFFSIZE_MED);
-		dest->loaded = 0;
-
-		return 0;
+	// Write the comp part.
+	if (comp < 0 || COMP_MPLUS1 < comp) {
+		return 2;
 	} else {
-		return 1;
+		strncat(dest, INDEX_TO_COMP[comp], maxwrite);
 	}
+
+	// Write the jump part.
+	if (jump < 0 || JUMP_ALWAYS < jump) {
+		return 3;
+	} else if (jump) {	// `0 < jump <= 7 = JUMP_ALWAYS'.
+		strncat(dest, ";", maxwrite);
+		strncat(dest, INDEX_TO_JUMP[jump], maxwrite);
+	}
+
+	return 0;
 }
 
 int n2t_set_dest(Cinstr_t *dest, word_t dest_reg) {
@@ -372,6 +353,29 @@ int n2t_set_jump(Cinstr_t *dest, word_t jump_cond) {
 word_t n2t_get_jump(Cinstr_t in) {
 	return in & 0x7;
 }
+
+
+int n2t_str_to_label(char const *str_repr, label_t *dest) {
+	size_t const len = strlen(str_repr);
+	char copy[len - 1];
+
+	if (str_repr[0] != '(' || str_repr[len - 1] != ')') {
+		return 1;
+	}
+
+	strncpy(copy, str_repr + 1, len - 2);
+	copy[len - 2] = '\0';
+
+	if (n2t_composed_of(copy, LABEL_CHARSET)) {
+		strncpy(dest->text_repr, str_repr, BUFFSIZE_MED);
+		dest->loaded = 0;
+
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 
 tokenseq_t* n2t_tokenseq_alloc(size_t n) {
 	tokenseq_t *o;
@@ -502,6 +506,7 @@ tokenseq_t* n2t_tokenize(const char *filepath) {
 
 	return seq;
 }
+
 
 static word_t n2t_parse_Cinstr_comp(char const *norm_repr) {
 	size_t i;

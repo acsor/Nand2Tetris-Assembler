@@ -31,6 +31,7 @@
 #define SYM_EQ		'='
 #define SYM_SEMIC	';'
 
+
 #define	DEST_NONE 0
 #define	DEST_M 1
 #define	DEST_D 2
@@ -80,6 +81,7 @@
 #define JUMP_LE 6
 #define JUMP_ALWAYS 7
 
+
 // A word in the Hack architecture is 16 bits, that we assing here once and for
 // all.
 typedef uint16_t word_t;
@@ -98,6 +100,7 @@ typedef struct {
 	uint8_t loaded;
 } Ainstr_t;
 
+// TO-DO Turn `Cinstr_t' into a structure.
 typedef word_t Cinstr_t;
 
 // Unfortunately, I can't say how space-efficient such a solution can be.
@@ -140,6 +143,14 @@ typedef struct {
 
 
 /**
+ * Instantiates an `instr_t' structure from `str_repr', containing its
+ * human-readable textual representation.
+ *
+ * Returns: `1' if `str_repr' could not be converted into an `instr_t' type,
+ * `0' otherwise.
+ */
+int n2t_str_to_instr(char const *str_repr, instr_t *dest);
+/**
  * Converts an instruction `in' in its bit string representation.
  *
  * Param `*dest': destination string to store the result in. NOTE: its length
@@ -156,6 +167,14 @@ int n2t_instr_to_bitstr(instr_t const in, char *const dest);
  * call.
  */
 int n2t_instr_to_str(instr_t const in, char *const dest, size_t maxwrite);
+
+/**
+ * Param `norm_repr': a normalized representation for the A instruction.
+ * Param `dest': `instr_t' variable on which to store the decoded instruction.
+ *
+ * Returns: `1' if an error occurs, `0' otherwise.
+ */
+int n2t_str_to_Ainstr(char const *norm_repr, instr_t *dest);
 /**
  * Converts an A-instruction `in' in its string representation.
  *
@@ -163,6 +182,15 @@ int n2t_instr_to_str(instr_t const in, char *const dest, size_t maxwrite);
  * error occurred.
  */
 int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite);
+
+/**
+ * Param `norm_repr': a normalized representation for the C instruction.
+ * Param `dest': `instr_t' variable on which to store the decoded instruction.
+ *
+ * Returns: `1' if an error occurs parsing the `dest' portion, `2' parsing the
+ * `comp' portion and `3' if parsing the `jump' portion, `0' otherwise.
+ */
+int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest);
 /**
  * Converts a C-instruction `in' in its string representation. The output will
  * be deprived from whitespaces, what is called a "normalized" representation
@@ -173,37 +201,6 @@ int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite);
  * the `jump' segment.
  */
 int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest, size_t maxwrite);
-/**
- * Instantiates an `instr_t' structure from `str_repr', containing its
- * human-readable textual representation.
- *
- * Returns: `1' if `str_repr' could not be converted into an `instr_t' type,
- * `0' otherwise.
- */
-int n2t_str_to_instr(char const *str_repr, instr_t *dest);
-/**
- * Param `norm_repr': a normalized representation for the A instruction.
- * Param `dest': `instr_t' variable on which to store the decoded instruction.
- *
- * Returns: `1' if an error occurs, `0' otherwise.
- */
-int n2t_str_to_Ainstr(char const *norm_repr, instr_t *dest);
-/**
- * Param `norm_repr': a normalized representation for the C instruction.
- * Param `dest': `instr_t' variable on which to store the decoded instruction.
- *
- * Returns: `1' if an error occurs parsing the `dest' portion, `2' parsing the
- * `comp' portion and `3' if parsing the `jump' portion, `0' otherwise.
- */
-int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest);
-/**
- * Instantiates an `label_t' variable from `str_repr', containing its
- * human-readable textual representation.
- *
- * Returns: `1' if `str_repr' could not be converted into an `label_t' type,
- * `0' otherwise.
- */
-int n2t_str_to_label(char const *str_repr, label_t *dest);
 /**
  * Sets the destination register(s) of a C-instruction computation (to choose
  * between `A', `D' or `M').
@@ -249,6 +246,15 @@ int n2t_set_jump(Cinstr_t *dest, word_t jump_cond);
  */
 // TO-DO Test
 word_t n2t_get_jump(Cinstr_t const in);
+
+/**
+ * Instantiates an `label_t' variable from `str_repr', containing its
+ * human-readable textual representation.
+ *
+ * Returns: `1' if `str_repr' could not be converted into an `label_t' type,
+ * `0' otherwise.
+ */
+int n2t_str_to_label(char const *str_repr, label_t *dest);
 
 /**
  * Allocates data in the heap storage for `n' `token_t' instances, returning
