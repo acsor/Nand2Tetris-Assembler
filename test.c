@@ -26,6 +26,7 @@
 #include <errno.h>
 #include "lexer.h"
 #include "utils.h"
+#include "memcache.h"
 
 
 // utils.h
@@ -50,6 +51,16 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite);
  */
 int test_batch_back_translation(void *const args, char errmsg[], size_t maxwrite);
 
+//memcache.h
+/**
+ * Tests `n2t_memcache_fetch()' and `n2t_memcache_add()'.
+ */
+int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite);
+/**
+ * Tests `n2t_memcache_extend()'.
+ */
+int test_n2t_memcache_extend(void *const args, char errmsg[], size_t maxwrite);
+
 
 typedef int (*test_function)(void*, char[], size_t);
 
@@ -59,13 +70,17 @@ int main (int argc, char *argv[]) {
 		test_n2t_strip, test_n2t_composed_of, test_n2t_decomment,
 		test_n2t_replace_any, test_n2t_collapse_any,
 
-		test_n2t_instr_to_bitstr, test_batch_back_translation
+		test_n2t_instr_to_bitstr, test_batch_back_translation,
+
+		test_n2t_memcache_fetch, test_n2t_memcache_extend
 	};
 	char *test_names[] = {
 		"test_n2t_strip", "test_n2t_composed_of", "test_n2t_decomment",
 		"test_n2t_replace_any", "test_n2t_collapse_any",
 
-		"test_n2t_instr_to_bitstr", "test_batch_back_translation"
+		"test_n2t_instr_to_bitstr", "test_batch_back_translation",
+
+		"test_n2t_memcache_fetch", "test_n2t_memcache_extend"
 	};
 	char errmsg[BUFFSIZE_VLARGE];
 	size_t const tests_no = sizeof(tests) / sizeof(test_function);
@@ -96,6 +111,7 @@ int main (int argc, char *argv[]) {
 }
 
 
+//utils.h
 int test_n2t_strip(void *const args, char errmsg[], size_t maxwrite) {
 	char const *inputs[] = {
 		"abcdefghijkl", "           abcdefghijkl", "abcdefghijkl         ",
@@ -217,6 +233,8 @@ int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite) {
 	return 0;
 }
 
+
+//lexer.h
 int test_n2t_instr_to_bitstr(
 	void *const args, char errmsg[], size_t maxwrite
 ) {
@@ -348,6 +366,76 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 
 	n2t_tokenseq_free(s);
 	fclose(expected);
+
+	return 0;
+}
+
+
+//memcache.h
+int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite) {
+	size_t nmemb = 10, membsize = 11, i;
+	memcache_t *c = n2t_memcache_alloc(nmemb, membsize);
+	void *fetch;
+	char const *source[] = {
+		"aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc", "dddddddddd", "eeeeeeeeee",
+		"ffffffffff", "gggggggggg", "hhhhhhhhhh", "iiiiiiiiii", "jjjjjjjjjj"
+	};
+
+	for (i = 0; i < nmemb; i++) {
+		n2t_memcache_add(c, source[i], strlen(source[i]) + 1);
+	}
+
+	for (i = 0; i < nmemb; i++) {
+		fetch = n2t_memcache_fetch(c, source[i], membsize);
+
+		if (memcmp(source[i], fetch, membsize)) {
+			snprintf(
+				errmsg, maxwrite, "`%s' didn't match with `%s'.", source[i],
+				(char*) fetch
+			);
+
+			return 1;
+		}
+	}
+
+	n2t_memcache_free(c);
+
+	return 0;
+}
+
+int test_n2t_memcache_extend(void *const args, char errmsg[], size_t maxwrite) {
+	size_t nmemb = 1000, membsize = 1, last;
+	int8_t const check = 0xFF;
+	int8_t *actual;
+	memcache_t *c = n2t_memcache_alloc(1, membsize);
+
+	for (last = c->length; last < nmemb; last++) {
+		// This might ensure no segmentation faults are caused.
+		memset(c->head + MEMCACHE_OFFSET(c, last - 1), check, membsize);
+		c = n2t_memcache_extend(c, 1);
+
+		if (c->length != last + 1) {
+			snprintf(
+				errmsg, maxwrite, "`c->length = %lu', but %lu was expected.",
+				c->length, last + 1
+			);
+
+			return 1;
+		}
+
+		actual = c->head + MEMCACHE_OFFSET(c, last - 1);
+		
+		if (*actual != check) {
+			snprintf(
+				errmsg, maxwrite, "Value at index %lu = %d != %d.",
+				last - 1, *actual, check
+			);
+
+			return 1;
+		}
+	}
+
+	n2t_memcache_free(c);
 
 	return 0;
 }
