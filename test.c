@@ -51,7 +51,7 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite);
  */
 int test_batch_back_translation(void *const args, char errmsg[], size_t maxwrite);
 
-//memcache.h
+// memcache.h
 /**
  * Tests `n2t_memcache_fetch()' and `n2t_memcache_add()'.
  */
@@ -416,7 +416,7 @@ int test_n2t_memcache_extend(void *const args, char errmsg[], size_t maxwrite) {
 
 		if (c->length != last + 1) {
 			snprintf(
-				errmsg, maxwrite, "`c->length = %lu', but %lu was expected.",
+				errmsg, maxwrite, "`c->length' = %lu, but %lu was expected.",
 				c->length, last + 1
 			);
 
