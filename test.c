@@ -53,7 +53,7 @@ int test_batch_back_translation(void *const args, char errmsg[], size_t maxwrite
 
 // memcache.h
 /**
- * Tests `n2t_memcache_fetch()' and `n2t_memcache_add()'.
+ * Tests `n2t_memcache_fetch()' and `n2t_memcache_store()'.
  */
 int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite);
 /**
@@ -382,7 +382,7 @@ int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite) {
 	};
 
 	for (i = 0; i < nmemb; i++) {
-		n2t_memcache_add(c, source[i], strlen(source[i]) + 1);
+		n2t_memcache_store(c, source[i], strlen(source[i]) + 1);
 	}
 
 	for (i = 0; i < nmemb; i++) {

@@ -53,12 +53,13 @@ memcache_t* n2t_memcache_extend(memcache_t *c, size_t n);
  * Param `objsize': size of the object to store into the cache memory.
  *
  * Returns:
- *   - `1' if `objsize' was strictly greater than `c->unitsize'
- *   - `2' if `source' already existed
- *   - `3' if `source' could not be inserted due to insufficient memory
+ *   - `1' if `source == NULL'
+ *   - `2' if `objsize' was strictly greater than `c->unitsize'
+ *   - `3' if `source' already existed
+ *   - `4' if `source' could not be inserted due to insufficient memory
  *   - `0' if a new item `source' was successfully added into the queue
  */
-int n2t_memcache_add(memcache_t *c, void const *source, size_t objsize);
+int n2t_memcache_store(memcache_t *c, void const *source, size_t objsize);
 /**
  * Param `mouldsize': size of the objects to compare.
  *

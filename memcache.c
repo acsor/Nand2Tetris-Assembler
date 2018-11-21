@@ -61,13 +61,15 @@ memcache_t* n2t_memcache_extend(memcache_t *c, size_t n) {
 	return c;
 }
 
-int n2t_memcache_add(memcache_t *c, void const *source, size_t objsize) {
-	if (objsize > c->unitsize) {
+int n2t_memcache_store(memcache_t *c, void const *source, size_t objsize) {
+	if (source == NULL) {
 		return 1;
-	} else if (n2t_memcache_fetch(c, source, objsize) != NULL) {
+	} else if (objsize > c->unitsize) {
 		return 2;
-	} else if (MEMCACHE_FULL(c)) {
+	} else if (n2t_memcache_fetch(c, source, objsize) != NULL) {
 		return 3;
+	} else if (MEMCACHE_FULL(c)) {
+		return 4;
 	} else {
 		memcpy(
 			c->head + MEMCACHE_OFFSET(c, c->next),
@@ -89,6 +91,8 @@ void* n2t_memcache_fetch(memcache_t const *c, void const *mould, size_t mouldsiz
 	size_t const cmpsize = MIN(c->unitsize, mouldsize);
 	size_t i;
 
+	if (mould == NULL)
+		return NULL;
 	if (mouldsize > c->unitsize)
 		return NULL;
 
