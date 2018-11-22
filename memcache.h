@@ -74,6 +74,15 @@ void* n2t_memcache_fetch(memcache_t const *c, void const *mould, uint32_t moulds
  */
 void* n2t_memcache_index_fetch(memcache_t const *c, uint32_t index);
 /**
+ * Returns:
+ * 	- `-1' if `mould' was not found in the cache table
+ * 	- `-2' if `mouldsize > c->unitsize'
+ * 	- `-3' if `mould == NULL'
+ *  - the identifying index associated with `mould' within the cache table
+ * 	  otherwise
+ */
+int64_t n2t_memcache_index_of(memcache_t const *c, void const *mould, uint32_t mouldsize);
+/**
  * Frees up the memory associated with a `memcache_t' object.
  */
 void n2t_memcache_free(memcache_t *c);

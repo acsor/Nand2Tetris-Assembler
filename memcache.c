@@ -107,6 +107,25 @@ void* n2t_memcache_fetch(memcache_t const *c, void const *mould, uint32_t moulds
 	return NULL;
 }
 
+int64_t n2t_memcache_index_of(
+	memcache_t const *c, void const *mould, uint32_t mouldsize
+) {
+	uint32_t const cmpsize = MIN(c->unitsize, mouldsize);
+	int64_t o;
+
+	if (mouldsize > c->unitsize)
+		return -2;
+	else if (mould == NULL)
+		return -3;
+
+	for (o = 0; o < c->next; o++) {
+		if (memcmp(c->head + MEMCACHE_OFFSET(c, o), mould, cmpsize) == 0)
+			return o;
+	}
+
+	return -1;
+}
+
 void* n2t_memcache_index_fetch(memcache_t const *c, uint32_t index) {
 	if (index >= c->next)
 		return NULL;
