@@ -29,6 +29,7 @@
 
 #define MEMCACHE_OFFSET(c, i)	(c->unitsize * i)
 #define MEMCACHE_FULL(c)	(c->next >= c->length)
+#define	MEMCACHE_DEFAULT_EXTEND 64
 
 /**
  * The `memcache_t' structure is a facility designed to "cache" same-valued
@@ -45,10 +46,9 @@ memcache_t* n2t_memcache_alloc(size_t units, size_t unitsize);
 /**
  * Extends the number of objects stored by `c' by an additional `n'.
  *
- * Returns: a pointer to the (possibly new) location of the old `memcache_t'
- * structure, or `NULL' if an error occurs.
+ * Returns: `1' if an error occurs, `0' otherwise.
  */
-memcache_t* n2t_memcache_extend(memcache_t *c, size_t n);
+int n2t_memcache_extend(memcache_t *c, size_t n);
 /**
  * Param `objsize': size of the object to store into the cache memory.
  *
@@ -56,7 +56,6 @@ memcache_t* n2t_memcache_extend(memcache_t *c, size_t n);
  *   - `1' if `source == NULL'
  *   - `2' if `objsize' was strictly greater than `c->unitsize'
  *   - `3' if `source' already existed
- *   - `4' if `source' could not be inserted due to insufficient memory
  *   - `0' if a new item `source' was successfully added into the queue
  */
 int n2t_memcache_store(memcache_t *c, void const *source, size_t objsize);

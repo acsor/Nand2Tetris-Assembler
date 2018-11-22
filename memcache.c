@@ -45,20 +45,20 @@ memcache_t* n2t_memcache_alloc(size_t units, size_t unitsize) {
 	return o;
 }
 
-memcache_t* n2t_memcache_extend(memcache_t *c, size_t n) {
+int n2t_memcache_extend(memcache_t *c, size_t n) {
 	void *updated_head;
 
 	if (n > 0) {
 		updated_head = realloc(c->head, c->unitsize * (c->length + n));
 
 		if (updated_head == NULL)
-			return NULL;
+			return 1;
 
 		c->head = updated_head;
 		c->length += n;
 	}
 
-	return c;
+	return 0;
 }
 
 int n2t_memcache_store(memcache_t *c, void const *source, size_t objsize) {
@@ -68,23 +68,25 @@ int n2t_memcache_store(memcache_t *c, void const *source, size_t objsize) {
 		return 2;
 	} else if (n2t_memcache_fetch(c, source, objsize) != NULL) {
 		return 3;
-	} else if (MEMCACHE_FULL(c)) {
-		return 4;
-	} else {
-		memcpy(
-			c->head + MEMCACHE_OFFSET(c, c->next),
-			source, MIN(c->unitsize, objsize)
-		);
-		// Set the remaining memory to `0', if any.
-		memset(
-			c->head + MEMCACHE_OFFSET(c, c->next) + MIN(c->unitsize, objsize),
-			0,
-			c->unitsize - MIN(c->unitsize, objsize)
-		);
-		c->next++;
-
-		return 0;
 	}
+	
+	if (MEMCACHE_FULL(c)) {
+		n2t_memcache_extend(c, MEMCACHE_DEFAULT_EXTEND);
+	}
+
+	memcpy(
+		c->head + MEMCACHE_OFFSET(c, c->next), source,
+		MIN(c->unitsize, objsize)
+	);
+	// Set the remaining memory to `0', if any.
+	memset(
+		c->head + MEMCACHE_OFFSET(c, c->next) + MIN(c->unitsize, objsize),
+		0,
+		c->unitsize - MIN(c->unitsize, objsize)
+	);
+	c->next++;
+
+	return 0;
 }
 
 void* n2t_memcache_fetch(memcache_t const *c, void const *mould, size_t mouldsize) {
