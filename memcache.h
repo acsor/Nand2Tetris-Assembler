@@ -39,7 +39,7 @@
 typedef struct {
 	void *head;
 	size_t unitsize;
-	size_t next, length;
+	uint32_t next, length;
 } memcache_t;
 
 memcache_t* n2t_memcache_alloc(size_t units, size_t unitsize);
@@ -67,6 +67,11 @@ int64_t n2t_memcache_store(memcache_t *c, void const *source, size_t objsize);
  * found (or an error occurs, e.g. `mouldsize > c->unitsize).
  */
 void* n2t_memcache_fetch(memcache_t const *c, void const *mould, size_t mouldsize);
+/**
+ * Returns: a cache object with index `index' or `NULL' if `index' maps to no
+ * such object or is out of bound.
+ */
+void* n2t_memcache_index_fetch(memcache_t const *c, uint32_t index);
 /**
  * Frees up the memory associated with a `memcache_t' object.
  */

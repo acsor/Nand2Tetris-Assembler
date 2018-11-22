@@ -107,6 +107,13 @@ void* n2t_memcache_fetch(memcache_t const *c, void const *mould, size_t mouldsiz
 	return NULL;
 }
 
+void* n2t_memcache_index_fetch(memcache_t const *c, uint32_t index) {
+	if (index >= c->next)
+		return NULL;
+
+	return c->head + MEMCACHE_OFFSET(c, index);
+}
+
 void n2t_memcache_free(memcache_t *c) {
 	free(c->head);
 	free(c);
