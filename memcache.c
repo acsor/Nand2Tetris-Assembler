@@ -80,8 +80,7 @@ int64_t n2t_memcache_store(memcache_t *c, void const *source, uint32_t objsize) 
 	);
 	// Set the remaining memory to `0', if any.
 	memset(
-		c->head + MEMCACHE_OFFSET(c, c->next) + MIN(c->unitsize, objsize),
-		0,
+		c->head + MEMCACHE_OFFSET(c, c->next) + MIN(c->unitsize, objsize), 0,
 		c->unitsize - MIN(c->unitsize, objsize)
 	);
 	c->next++;
@@ -98,7 +97,7 @@ void* n2t_memcache_fetch(memcache_t const *c, void const *mould, uint32_t moulds
 	if (mouldsize > c->unitsize)
 		return NULL;
 
-	for (i = 0; i < c->length; i++) {
+	for (i = 0; i < c->next; i++) {
 		if (memcmp(c->head + MEMCACHE_OFFSET(c, i), mould, cmpsize) == 0) {
 			return c->head + MEMCACHE_OFFSET(c, i);
 		}
@@ -111,7 +110,7 @@ int64_t n2t_memcache_index_of(
 	memcache_t const *c, void const *mould, uint32_t mouldsize
 ) {
 	uint32_t const cmpsize = MIN(c->unitsize, mouldsize);
-	int64_t o;
+	uint32_t o;
 
 	if (mouldsize > c->unitsize)
 		return -2;
