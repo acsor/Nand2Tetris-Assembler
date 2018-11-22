@@ -61,13 +61,13 @@ int n2t_memcache_extend(memcache_t *c, size_t n) {
 	return 0;
 }
 
-int n2t_memcache_store(memcache_t *c, void const *source, size_t objsize) {
+int64_t n2t_memcache_store(memcache_t *c, void const *source, size_t objsize) {
 	if (source == NULL) {
-		return 1;
+		return -1;
 	} else if (objsize > c->unitsize) {
-		return 2;
+		return -2;
 	} else if (n2t_memcache_fetch(c, source, objsize) != NULL) {
-		return 3;
+		return -3;
 	}
 	
 	if (MEMCACHE_FULL(c)) {
@@ -86,7 +86,7 @@ int n2t_memcache_store(memcache_t *c, void const *source, size_t objsize) {
 	);
 	c->next++;
 
-	return 0;
+	return c->next - 1;
 }
 
 void* n2t_memcache_fetch(memcache_t const *c, void const *mould, size_t mouldsize) {
