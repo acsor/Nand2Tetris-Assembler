@@ -24,6 +24,7 @@
 #define MEMCACHE_H
 
 #include <stdlib.h>
+#include <stdint.h>
 #include "utils.h"
 
 
@@ -38,17 +39,17 @@
  */
 typedef struct {
 	void *head;
-	size_t unitsize;
+	uint32_t unitsize;
 	uint32_t next, length;
 } memcache_t;
 
-memcache_t* n2t_memcache_alloc(size_t units, size_t unitsize);
+memcache_t* n2t_memcache_alloc(uint32_t units, uint32_t unitsize);
 /**
  * Extends the number of objects stored by `c' by an additional `n'.
  *
  * Returns: `1' if an error occurs, `0' otherwise.
  */
-int n2t_memcache_extend(memcache_t *c, size_t n);
+int n2t_memcache_extend(memcache_t *c, uint32_t n);
 /**
  * Param `objsize': size of the object to store into the cache memory.
  *
@@ -59,14 +60,14 @@ int n2t_memcache_extend(memcache_t *c, size_t n);
  *   - an integer `n >= 0' indicating the cache index the object was inserted
  *   into, in case of success.
  */
-int64_t n2t_memcache_store(memcache_t *c, void const *source, size_t objsize);
+int64_t n2t_memcache_store(memcache_t *c, void const *source, uint32_t objsize);
 /**
  * Param `mouldsize': size of the objects to compare.
  *
  * Returns: a pointer to a memory area equal to `mould' or `NULL' if none was
  * found (or an error occurs, e.g. `mouldsize > c->unitsize).
  */
-void* n2t_memcache_fetch(memcache_t const *c, void const *mould, size_t mouldsize);
+void* n2t_memcache_fetch(memcache_t const *c, void const *mould, uint32_t mouldsize);
 /**
  * Returns: a cache object with index `index' or `NULL' if `index' maps to no
  * such object or is out of bound.

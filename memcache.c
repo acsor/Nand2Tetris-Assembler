@@ -22,7 +22,7 @@
 #include "memcache.h"
 #include <string.h>
 
-memcache_t* n2t_memcache_alloc(size_t units, size_t unitsize) {
+memcache_t* n2t_memcache_alloc(uint32_t units, uint32_t unitsize) {
 	memcache_t *o;
 
 	if (units < 1 || unitsize < 1)
@@ -45,7 +45,7 @@ memcache_t* n2t_memcache_alloc(size_t units, size_t unitsize) {
 	return o;
 }
 
-int n2t_memcache_extend(memcache_t *c, size_t n) {
+int n2t_memcache_extend(memcache_t *c, uint32_t n) {
 	void *updated_head;
 
 	if (n > 0) {
@@ -61,7 +61,7 @@ int n2t_memcache_extend(memcache_t *c, size_t n) {
 	return 0;
 }
 
-int64_t n2t_memcache_store(memcache_t *c, void const *source, size_t objsize) {
+int64_t n2t_memcache_store(memcache_t *c, void const *source, uint32_t objsize) {
 	if (source == NULL) {
 		return -1;
 	} else if (objsize > c->unitsize) {
@@ -89,8 +89,8 @@ int64_t n2t_memcache_store(memcache_t *c, void const *source, size_t objsize) {
 	return c->next - 1;
 }
 
-void* n2t_memcache_fetch(memcache_t const *c, void const *mould, size_t mouldsize) {
-	size_t const cmpsize = MIN(c->unitsize, mouldsize);
+void* n2t_memcache_fetch(memcache_t const *c, void const *mould, uint32_t mouldsize) {
+	uint32_t const cmpsize = MIN(c->unitsize, mouldsize);
 	size_t i;
 
 	if (mould == NULL)
