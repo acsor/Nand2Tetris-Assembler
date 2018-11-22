@@ -52,13 +52,8 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite);
 int test_batch_back_translation(void *const args, char errmsg[], size_t maxwrite);
 
 // memcache.h
-/**
- * Tests `n2t_memcache_fetch()' and `n2t_memcache_store()'.
- */
 int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite);
-/**
- * Tests `n2t_memcache_extend()'.
- */
+int test_n2t_memcache_index_fetch(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_memcache_extend(void *const args, char errmsg[], size_t maxwrite);
 
 
@@ -72,7 +67,8 @@ int main (int argc, char *argv[]) {
 
 		test_n2t_instr_to_bitstr, test_batch_back_translation,
 
-		test_n2t_memcache_fetch, test_n2t_memcache_extend
+		test_n2t_memcache_fetch, test_n2t_memcache_extend,
+		test_n2t_memcache_index_fetch
 	};
 	char *test_names[] = {
 		"test_n2t_strip", "test_n2t_composed_of", "test_n2t_decomment",
@@ -80,7 +76,8 @@ int main (int argc, char *argv[]) {
 
 		"test_n2t_instr_to_bitstr", "test_batch_back_translation",
 
-		"test_n2t_memcache_fetch", "test_n2t_memcache_extend"
+		"test_n2t_memcache_fetch", "test_n2t_memcache_extend",
+		"test_n2t_memcache_index_fetch"
 	};
 	char errmsg[BUFFSIZE_VLARGE];
 	size_t const tests_no = sizeof(tests) / sizeof(test_function);
@@ -400,6 +397,51 @@ int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite) {
 
 	n2t_memcache_free(c);
 
+	return 0;
+}
+
+int test_n2t_memcache_index_fetch(
+	void *const args, char errmsg[], size_t maxwrite
+) {
+	size_t nmemb = 3000, membsize = sizeof(int64_t), i;
+	memcache_t *c = n2t_memcache_alloc(nmemb, membsize);
+	int64_t temp = 2;
+	void *e;
+
+	for (i = 0; i < nmemb; i++) {
+		n2t_memcache_store(c, &temp, sizeof(temp));
+		// We pick arbitrary values -- all non-odd integers.
+		temp += 2;
+	}
+
+	if (c->next != nmemb) {
+		snprintf(
+			errmsg, maxwrite, "Added %u elements, but %lu had to.", c->next,
+			nmemb
+		);
+		n2t_memcache_free(c);
+
+		return 1;
+	}
+
+	temp = 2;
+	for (i = 0; i < c->next; i++) {
+		e = n2t_memcache_index_fetch(c, i);
+
+		if (memcmp(e, &temp, sizeof(temp))) {
+			snprintf(
+				errmsg, maxwrite, "Expected value %ld, got %ld.", temp,
+				*((int64_t*) e)
+			);
+
+			n2t_memcache_free(c);
+			return 1;
+		}
+
+		temp += 2;
+	}
+
+	n2t_memcache_free(c);
 	return 0;
 }
 
