@@ -24,6 +24,7 @@
 #define	LEXER_H
 
 #include "utils.h"
+#include "memcache.h"
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -82,6 +83,26 @@
 #define JUMP_ALWAYS 7
 
 
+typedef enum {
+	UNKNOWN = 0, ROM, RAM
+} memtype_t;
+
+#define LABEL_CHARSET "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.$_0123456789"
+/**
+ * `memloc_t' encodes a memory location (either from the ROM instruction
+ * memory, or from the RAM) optionally assigning a name (a label) to it.
+ *
+ * The `loaded' field is a parser hint for whether this `memloc_t' instance
+ * needs further processing during the parsing phase, or is already done.
+ */
+typedef struct {
+	uint16_t location;
+	char label[BUFFSIZE_MED];
+	uint8_t loaded;
+	memtype_t type;
+} memloc_t;
+
+
 // A word in the Hack architecture is 16 bits, that we assing here once and for
 // all.
 typedef uint16_t word_t;
@@ -90,14 +111,14 @@ typedef enum {
 	A = 0, C
 } instr_type_t;
 
+// An A-instruction holds a reference to a memory location -- whether in ROM or
+// RAM. Instead of storing the instruction bits directly in the structure, we
+// compute them only when needed, memorizing the minimum necessary.
+//
+// `memptr' references that memory location that will be later used to
+// compue the 16-bit representation of the instruction.
 typedef struct {
-	word_t bits;
-	// Name of the label, if any, that this A instruction was initially read
-	// with.
-	char label[BUFFSIZE_MED];
-	// Lexer hint for whether this struct instance has been initialized
-	// during the first parsing phase, or should be filled in later.
-	uint8_t loaded;
+	memloc_t memptr;
 } Ainstr_t;
 
 // TO-DO Turn `Cinstr_t' into a structure.
@@ -115,30 +136,30 @@ typedef struct {
 
 typedef enum {
 	INSTR = 0, LABEL
-} token_type;
-
-#define LABEL_CHARSET "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.$_0123456789"
-typedef struct {
-	char text_repr[BUFFSIZE_MED];
-	// The memory location which this label is a symbol for.
-	uint16_t location;
-	// Whether the `location' value of this instance has been set.
-	uint8_t loaded;
-} label_t;
+} token_type_t;
 
 typedef struct {
 	union {
 		instr_t instr;
-		label_t label;
+		memloc_t label;
 	} data;
-	token_type type;
+	token_type_t type;
 } token_t;
 
+/**
+ * `tokenseq_t' needs some explanation: the `tokens' variable stores ADDRESSES
+ * to `token_t' instances stored elsewhere, namely in `tokens_multiton'. This
+ * is not only to avoid greater memory loads, but to facilitate the parsing
+ * phase in which the parser only has to update objects' info only once, and
+ * see the change propagate to all the other copies stored in `tokens'.
+ */
 typedef struct {
-	token_t *tokens;
+	uint32_t *tokens;
 	// Index of the next `token_t' to be written.
-	size_t next;
-	size_t ntokens;
+	uint32_t next;
+	uint32_t ntokens;
+
+	memcache_t *tokens_multiton;
 } tokenseq_t;
 
 
@@ -168,20 +189,25 @@ int n2t_instr_to_bitstr(instr_t const in, char *const dest);
  */
 int n2t_instr_to_str(instr_t const in, char *const dest, size_t maxwrite);
 
+#define	AINSTR_ERROR (1 << 15)
 /**
  * Param `norm_repr': a normalized representation for the A instruction.
- * Param `dest': `instr_t' variable on which to store the decoded instruction.
+ * Param `dest': `Ainstr_t' variable on which to store the decoded instruction.
  *
  * Returns: `1' if an error occurs, `0' otherwise.
  */
-int n2t_str_to_Ainstr(char const *norm_repr, instr_t *dest);
+int n2t_str_to_Ainstr(char const *norm_repr, Ainstr_t *dest);
 /**
  * Converts an A-instruction `in' in its string representation.
  *
- * Returns: the total number of characters written to `dest', or `-1' if an
- * error occurred.
+ * Returns: `1' if an error occurs, `0' otherwise.
  */
 int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite);
+/**
+ * Returns: a bitvector representing the A instruction `in' or `AINSTR_ERROR'
+ * if an error occurs.
+ */
+word_t n2t_Ainstr_bits(Ainstr_t const in);
 
 /**
  * Param `norm_repr': a normalized representation for the C instruction.
@@ -190,7 +216,7 @@ int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite);
  * Returns: `1' if an error occurs parsing the `dest' portion, `2' parsing the
  * `comp' portion and `3' if parsing the `jump' portion, `0' otherwise.
  */
-int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest);
+int n2t_str_to_Cinstr(char const *const norm_repr, Cinstr_t *dest);
 /**
  * Converts a C-instruction `in' in its string representation. The output will
  * be deprived from whitespaces, what is called a "normalized" representation
@@ -247,29 +273,40 @@ int n2t_set_jump(Cinstr_t *dest, word_t jump_cond);
 // TO-DO Test
 word_t n2t_get_jump(Cinstr_t const in);
 
+
 /**
- * Instantiates an `label_t' variable from `str_repr', containing its
- * human-readable textual representation.
+ * Sets a `memloc_t' variable from `str_repr', containing its human-readable
+ * textual representation.
  *
- * Returns: `1' if `str_repr' could not be converted into an `label_t' type,
+ * Returns: `1' if `str_repr' could not be converted into an `memloc_t' type,
  * `0' otherwise.
  */
-int n2t_str_to_label(char const *str_repr, label_t *dest);
+int n2t_str_to_label(char const *str_repr, memloc_t *dest);
 
+
+#define DEFAULT_EXTEND_SIZE 64
 /**
  * Allocates data in the heap storage for `n' `token_t' instances, returning
  * a `tokenseq_t' data type for management or `NULL' if an issue verifies.
  */
 tokenseq_t* n2t_tokenseq_alloc(size_t n);
+int n2t_tokenseq_append_token_index(tokenseq_t *s, uint32_t index);
+int n2t_tokenseq_cache_token(tokenseq_t *s, token_t const t);
 /**
- * Extends the number of `token_t' values stored by `s' by an additional `n'.
- *
- * Returns: a pointer with the same value as `s' or `NULL' if an error
- * verifies.
+ * Returns: a R/W pointer to a `token_t' variable located at index `index'
+ * within the token sequence.
  */
-tokenseq_t* n2t_tokenseq_extend(tokenseq_t *s, size_t n);
-int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const in);
-int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l);
+token_t* n2t_tokenseq_index_get(tokenseq_t const *s, uint32_t index);
+/**
+ * Comments and new lines are ignored.
+ *
+ * Param `filepath': a file path of an .asm file to tokenize.
+ *
+ * Returns: a `tokenseq_t' pointer, storing all the Hack-language tokens to be
+ * interpreted, or `NULL' if a reading error occurs. The return value should be
+ * later freed by a call to `n2t_tokenseq_free()'.
+ */
+tokenseq_t* n2t_tokenize(const char *filepath);
 /**
  * Returns: `1' if `s' can not contain any more `token_t's, `0' otherwise.
  * Note that for a `tokenseq_t' variable `s', `s->next' points to the NEXT
@@ -278,18 +315,15 @@ int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l);
  */
 int n2t_tokenseq_full(tokenseq_t const *s);
 /**
+ * Extends the number of `token_t' values stored by `s' by an additional `n'.
+ *
+ * Returns: a pointer with the same value as `s' or `NULL' if an error
+ * verifies.
+ */
+tokenseq_t* n2t_tokenseq_extend(tokenseq_t *s, size_t n);
+/**
  * Frees up the dynamic data previously allocated for a `tokenseq_t' structure.
  */
 void n2t_tokenseq_free(tokenseq_t *l);
-/**
- * Comments and new lines are ignored.
- *
- * Param `filepath': a file path of an .asm file to tokenize.
- *
- * Returns: a `tokenseq_t' pointer, storing all the Hack-language tokens that
- * could be interpreted, or `NULL' if a reading error occurs. The return value
- * should be later freed by a call to `n2t_tokenseq_free()'.
- */
-tokenseq_t* n2t_tokenize(const char *filepath);
 
 #endif

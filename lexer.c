@@ -111,16 +111,19 @@ int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
 	}
 
 	if (normalized[0] == '@') {
-		return n2t_str_to_Ainstr(normalized, dest);
+		dest->type = A;
+		return n2t_str_to_Ainstr(normalized, &dest->instr.a);
 	} else {
-		return n2t_str_to_Cinstr(normalized, dest);
+		dest->type = C;
+		return n2t_str_to_Cinstr(normalized, &dest->instr.c);
 	}
 }
 
 int n2t_instr_to_bitstr(instr_t const in, char *const dest) {
 	word_t bitmask = 1 << 15,
 		   i = 0;
-	word_t const bits = (in.type == A) ? in.instr.a.bits: in.instr.c;
+	word_t const bits =
+		(in.type == A) ? n2t_Ainstr_bits(in.instr.a): in.instr.c;
 
 	while (bitmask > 0 && i < 16) {
 		dest[i] = bits & bitmask ? '1': '0';
@@ -145,47 +148,69 @@ int n2t_instr_to_str(instr_t const in, char *const dest, size_t maxwrite) {
 }
 
 
-int n2t_str_to_Ainstr(char const *norm_repr, instr_t *dest) {
+int n2t_str_to_Ainstr(char const *norm_repr, Ainstr_t *dest) {
 	if (norm_repr[0] != '@') {
 		return 1;	// Not an A-instruction.
 	}
 
 	if (n2t_is_numeric(norm_repr + 1) && norm_repr[1] != '0') {
 		// `[1-9]\d*' digits.
-		dest->instr.a.bits = atoi(norm_repr + 1);
-		dest->instr.a.loaded = 1;
+		dest->memptr.location = atoi(norm_repr + 1);
+		dest->memptr.loaded = 1;
+		snprintf(
+			dest->memptr.label, BUFFSIZE_MED, "%u", dest->memptr.location
+		);
+		dest->memptr.type = RAM;
 	} else if (	// @R0, @R1, ..., @R15
 		// TO-DO The condition below allows values such as `@R01', `@R02',
 		// ..., `@R0X'. Fix it.
 		norm_repr[1] == 'R' && n2t_is_numeric(norm_repr + 2) &&\
 		atoi(norm_repr + 2) < 16
 	) {
-		strncpy(dest->instr.a.label, norm_repr + 1, BUFFSIZE_MED);
-		dest->instr.a.bits = atoi(norm_repr + 2);
-		dest->instr.a.loaded = 1;
+		dest->memptr.location = atoi(norm_repr + 2);
+		dest->memptr.loaded = 1;
+		snprintf(
+			dest->memptr.label, BUFFSIZE_MED, "R%u", dest->memptr.location
+		);
+		dest->memptr.type = RAM;
 	} else if (n2t_composed_of(norm_repr + 1, LABEL_CHARSET)) {
 		// @LABEL, @label, @...
-		strncpy(dest->instr.a.label, norm_repr + 1, BUFFSIZE_MED);
-		dest->instr.a.loaded = 0;
+		// strncpy(dest->instr.a.label, norm_repr + 1, BUFFSIZE_MED);
+		// dest->instr.a.loaded = 0;
+		dest->memptr.loaded = 0;
+		strncpy(dest->memptr.label, norm_repr + 1, BUFFSIZE_MED);
+		dest->memptr.type = UNKNOWN;
 	} else {
 		return 1;
 	}
-
-	dest->type = A;
 
 	return 0;
 }
 
 int n2t_Ainstr_to_str(Ainstr_t const in, char *const dest, size_t maxwrite) {
-	if (in.label[0] != '\0') {
-		return snprintf(dest, maxwrite, "@%s", in.label);
+	if (in.memptr.label[0] != '\0') {
+		snprintf(dest, maxwrite, "@%s", in.memptr.label);
 	} else {
-		return snprintf(dest, maxwrite, "@%u", in.bits);
+		snprintf(dest, maxwrite, "@%d", in.memptr.location);
 	}
+
+	return 0;
+}
+
+word_t n2t_Ainstr_bits(Ainstr_t const in) {
+	if (in.memptr.loaded) {
+		// If bit 16 was set to 1:
+		if (in.memptr.location & (1 << 15))
+			return AINSTR_ERROR;
+
+		return in.memptr.location;
+	}
+	
+	return AINSTR_ERROR;
 }
 
 
-int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest) {
+int n2t_str_to_Cinstr(char const *const norm_repr, Cinstr_t *dest) {
 	char const
 		*const dest_field_tail = index(norm_repr, SYM_EQ),
 		*const jump_field_head = index(norm_repr, SYM_SEMIC);
@@ -196,7 +221,7 @@ int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest) {
 	char parsed_dest[4] = "   ";
 	size_t parsed_dest_index = 0;
 
-	dest->instr.c = 0;
+	*dest = 0;
 
 	// Parse the `dest' part.
 	// If '=' = SYM_EQ was not found in `norm_repr', `dest_field_tail' will be
@@ -209,15 +234,15 @@ int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest) {
 
 			switch (norm_repr[dest_offset]) {
 				case 'M':
-					n2t_set_dest(&dest->instr.c, DEST_M);
+					n2t_set_dest(dest, DEST_M);
 					parsed_dest[parsed_dest_index] = 'M';
 					break;
 				case 'D':
-					n2t_set_dest(&dest->instr.c, DEST_D);
+					n2t_set_dest(dest, DEST_D);
 					parsed_dest[parsed_dest_index] = 'D';
 					break;
 				case 'A':
-					n2t_set_dest(&dest->instr.c, DEST_A);
+					n2t_set_dest(dest, DEST_A);
 					parsed_dest[parsed_dest_index] = 'A';
 					break;
 				default:
@@ -233,19 +258,19 @@ int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest) {
 	// Parse the `jump' part.
 	if (jump_field_head) {
 		if (!strcmp(jump_field_head + 1, "JGT")) {
-			n2t_set_jump(&dest->instr.c, JUMP_GT);
+			n2t_set_jump(dest, JUMP_GT);
 		} else if (!strcmp(jump_field_head + 1, "JEQ")) {
-			n2t_set_jump(&dest->instr.c, JUMP_EQ);
+			n2t_set_jump(dest, JUMP_EQ);
 		} else if (!strcmp(jump_field_head + 1, "JGE")) {
-			n2t_set_jump(&dest->instr.c, JUMP_GE);
+			n2t_set_jump(dest, JUMP_GE);
 		} else if (!strcmp(jump_field_head + 1, "JLT")) {
-			n2t_set_jump(&dest->instr.c, JUMP_LT);
+			n2t_set_jump(dest, JUMP_LT);
 		} else if (!strcmp(jump_field_head + 1, "JNE")) {
-			n2t_set_jump(&dest->instr.c, JUMP_NE);
+			n2t_set_jump(dest, JUMP_NE);
 		} else if (!strcmp(jump_field_head + 1, "JLE")) {
-			n2t_set_jump(&dest->instr.c, JUMP_LE);
+			n2t_set_jump(dest, JUMP_LE);
 		} else if (!strcmp(jump_field_head + 1, "JMP")) {
-			n2t_set_jump(&dest->instr.c, JUMP_ALWAYS);
+			n2t_set_jump(dest, JUMP_ALWAYS);
 		} else {
 			return 3;
 		}
@@ -264,13 +289,12 @@ int n2t_str_to_Cinstr(char const *const norm_repr, instr_t *dest) {
 	n2t_collapse_any(comp_field, " \t\n", comp_field);
 
 	if ((comp_encoding = n2t_parse_Cinstr_comp(comp_field)) != COMP_ERROR) {
-		n2t_set_comp(&dest->instr.c, comp_encoding);
+		n2t_set_comp(dest, comp_encoding);
 	} else {
 		return 2;
 	}
 
-	dest->instr.c |= (7 << 13);
-	dest->type = C;
+	*dest |= (7 << 13);
 
 	return 0;
 }
@@ -336,7 +360,7 @@ int n2t_set_comp(Cinstr_t *in, word_t comp_instr) {
 	}
 }
 
-word_t n2t_get_comp(Cinstr_t in) {
+word_t n2t_get_comp(Cinstr_t const in) {
 	return (in & (0x7F << 6)) >> 6;
 }
 
@@ -350,33 +374,36 @@ int n2t_set_jump(Cinstr_t *dest, word_t jump_cond) {
 	}
 }
 
-word_t n2t_get_jump(Cinstr_t in) {
+word_t n2t_get_jump(Cinstr_t const in) {
 	return in & 0x7;
 }
 
 
-int n2t_str_to_label(char const *str_repr, label_t *dest) {
+int n2t_str_to_label(char const *str_repr, memloc_t *dest) {
 	size_t const len = strlen(str_repr);
-	char copy[len - 1];
 
-	if (str_repr[0] != '(' || str_repr[len - 1] != ')') {
+	if (str_repr[0] != '(' || str_repr[len - 1] != ')')
 		return 1;
-	}
+	if (len - 2 >= BUFFSIZE_MED)	// Line too long.
+		return 1;
 
-	strncpy(copy, str_repr + 1, len - 2);
-	copy[len - 2] = '\0';
+	strncpy(dest->label, str_repr + 1, len - 2);
+	dest->label[len - 2] = '\0';
 
-	if (n2t_composed_of(copy, LABEL_CHARSET)) {
-		strncpy(dest->text_repr, str_repr, BUFFSIZE_MED);
+	if (n2t_composed_of(dest->label, LABEL_CHARSET)) {
+		dest->type = ROM;
 		dest->loaded = 0;
 
 		return 0;
 	} else {
+		dest->label[0] = '\0';
+
 		return 1;
 	}
 }
 
 
+// tokenseq_t
 tokenseq_t* n2t_tokenseq_alloc(size_t n) {
 	tokenseq_t *o;
 
@@ -387,7 +414,7 @@ tokenseq_t* n2t_tokenseq_alloc(size_t n) {
 	if (o == NULL)
 		return NULL;
 
-	o->tokens = calloc(n, sizeof(token_t));
+	o->tokens = calloc(n, sizeof(uint32_t));
 	if (o->tokens == NULL) {
 		free(o);
 		return NULL;
@@ -396,67 +423,48 @@ tokenseq_t* n2t_tokenseq_alloc(size_t n) {
 	o->ntokens = n;
 	o->next = 0;
 
+	o->tokens_multiton = n2t_memcache_alloc(n, sizeof(token_t));
+
+	if (o->tokens_multiton == NULL) {
+		free(o->tokens);
+		free(o);
+
+		return NULL;
+	}
+
 	return o;
 }
 
-tokenseq_t* n2t_tokenseq_extend(tokenseq_t *s, size_t n) {
-	token_t *t;
-
-	if (n > 0) {
-		t = realloc(s->tokens, sizeof(token_t) * (s->ntokens + n));
-
-		if (t == NULL) {
-			return NULL;
-		} else {
-			s->tokens = t;
-			s->ntokens += n;
-		}
-	}
-
-	return s;
-}
-
-int n2t_tokenseq_append_instr(tokenseq_t *s, instr_t const in) {
+int n2t_tokenseq_append_token_index(tokenseq_t *s, uint32_t index) {
 	if (s == NULL)
 		return 1;
 
-	if (in.type == A) {
-		s->tokens[s->next].data.instr.instr.a = in.instr.a;
-		s->tokens[s->next].data.instr.type = A;
-	} else if (in.type == C) {
-		s->tokens[s->next].data.instr.instr.c = in.instr.c;
-		s->tokens[s->next].data.instr.type = C;
-	} else {
-		return 1;
+	if (n2t_tokenseq_full(s)) {
+		n2t_tokenseq_extend(s, BUFFSIZE_MED);
 	}
-	s->tokens[s->next].type = INSTR;
 
+	s->tokens[s->next] = index;
 	s->next++;
 
 	return 0;
 }
 
-int n2t_tokenseq_append_label(tokenseq_t *s, label_t const l) {
+int n2t_tokenseq_cache_token(tokenseq_t *s, token_t const t) {
 	if (s == NULL)
 		return 1;
 
-	strncpy(
-		s->tokens[s->next].data.label.text_repr, l.text_repr, BUFFSIZE_MED
+	return n2t_memcache_store(s->tokens_multiton, &t, sizeof(token_t));
+}
+
+token_t* n2t_tokenseq_index_get(tokenseq_t const *s, uint32_t index) {
+	if (s == NULL)
+		return NULL;
+	if (index >= s->next)
+		return NULL;
+
+	return n2t_memcache_index_fetch(
+		s->tokens_multiton, s->tokens[index]
 	);
-	s->tokens[s->next].data.label.location = l.location;
-	s->tokens[s->next].type = LABEL;
-	s->next++;
-
-	return 0;
-}
-
-int n2t_tokenseq_full(tokenseq_t const *s) {
-	return s->next >= s->ntokens;
-}
-
-void n2t_tokenseq_free(tokenseq_t *l) {
-	free(l->tokens);
-	free(l);
 }
 
 tokenseq_t* n2t_tokenize(const char *filepath) {
@@ -464,17 +472,16 @@ tokenseq_t* n2t_tokenize(const char *filepath) {
 	char buff[BUFFSIZE_LARGE];
 
 	tokenseq_t *seq;
-	instr_t i;
-	label_t l;
+	token_t t;
+	int64_t cacheindex;
 
-	memset(&i, 0, sizeof(instr_t));
-	memset(&l, 0, sizeof(instr_t));
+	memset(&t, 0, sizeof(token_t));
 
 	if ((fin = fopen(filepath, "r")) == NULL) {
 		return NULL;
 	}
 
-	if ((seq = n2t_tokenseq_alloc(BUFFSIZE_MED)) == NULL) {
+	if ((seq = n2t_tokenseq_alloc(BUFFSIZE_LARGE)) == NULL) {
 		fclose(fin);
 		return NULL;
 	}
@@ -488,23 +495,65 @@ tokenseq_t* n2t_tokenize(const char *filepath) {
 		if (buff[0] == '\0')
 			continue;
 
-		if (n2t_tokenseq_full(seq)) {
-			// Double the size at each new refill.
-			n2t_tokenseq_extend(seq, seq->ntokens);
+		if (n2t_str_to_instr(buff, &t.data.instr) == 0) {
+			t.type = INSTR;
+		} else if (n2t_str_to_label(buff, &t.data.label) == 0) {
+			t.type = LABEL;
+		} else {
+			// We couldn't parse in any possible way `buff'.
+			fclose(fin);
+			n2t_tokenseq_free(seq);
+
+			return NULL;
 		}
 
-		if (n2t_str_to_instr(buff, &i) == 0) {
-			n2t_tokenseq_append_instr(seq, i);
-			memset(&i, 0, sizeof(instr_t));
-		} else if (n2t_str_to_label(buff, &l) == 0) {
-			n2t_tokenseq_append_label(seq, l);
-			memset(&l, 0, sizeof(label_t));
+		cacheindex = n2t_memcache_index_of(
+			seq->tokens_multiton, &t, sizeof(token_t)
+		);
+		// If `t' was already present in the multiton store:
+		if (cacheindex >= 0) {
+			n2t_tokenseq_append_token_index(seq, cacheindex);
+		} else {
+			n2t_tokenseq_cache_token(seq, t);
+			n2t_tokenseq_append_token_index(
+				seq,
+				n2t_memcache_index_of(seq->tokens_multiton, &t, sizeof(token_t))
+			);
 		}
+
+		memset(&t, 0, sizeof(token_t));
 	}
 
 	fclose(fin);
 
 	return seq;
+}
+
+int n2t_tokenseq_full(tokenseq_t const *s) {
+	return s->next >= s->ntokens;
+}
+
+tokenseq_t* n2t_tokenseq_extend(tokenseq_t *s, size_t n) {
+	uint32_t *t;
+
+	if (n > 0) {
+		t = realloc(s->tokens, sizeof(uint32_t) * (s->ntokens + n));
+
+		if (t == NULL) {
+			return NULL;
+		} else {
+			s->tokens = t;
+			s->ntokens += n;
+		}
+	}
+
+	return s;
+}
+
+void n2t_tokenseq_free(tokenseq_t *l) {
+	n2t_memcache_free(l->tokens_multiton);
+	free(l->tokens);
+	free(l);
 }
 
 

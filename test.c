@@ -248,8 +248,7 @@ int test_n2t_instr_to_bitstr(
 	size_t i, inputs_no = sizeof(inputs) / sizeof(short int);
 
 	for (i = 0; i < inputs_no; i++) {
-		c = inputs[i];
-		a.bits = inputs[i];
+		a.memptr.location = c = inputs[i];
 		in.instr.c = c;
 		in.instr.a = a;
 
@@ -269,10 +268,12 @@ int test_n2t_instr_to_bitstr(
 	return 0;
 }
 
-int test_batch_back_translation(void *const args, char errmsg[], size_t maxwrite) {
+int test_batch_back_translation(
+	void *const args, char errmsg[], size_t maxwrite
+) {
 	char const *filenames[] = {
-		"Add.asm", "Max.asm", "MaxL.asm", "Pong.asm", "PongL.asm", "Rect.asm", 
-		"RectL.asm", 
+		"Add.asm", "Max.asm", "MaxL.asm", "Pong.asm", "PongL.asm", "Rect.asm",
+		"RectL.asm"
 	};
 	char const *test_dir = "test_fixtures/test_batch_back_translation/";
 	char filepath[BUFFSIZE_LARGE];
@@ -296,6 +297,7 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 		 actual_repr[BUFFSIZE_LARGE];
 	FILE *expected;
 	tokenseq_t *s;
+	token_t *t;
 	size_t i = 0;
 
 	if ((expected = fopen(filepath, "rt")) == NULL) {
@@ -314,36 +316,47 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 
 	while (i < s->next && fgets(exp_repr, BUFFSIZE_LARGE, expected)) {
 		n2t_strip(exp_repr, exp_repr);
+		t = n2t_tokenseq_index_get(s, i);
 
-		if (s->tokens[i].type == INSTR) {
-			n2t_instr_to_str(
-				s->tokens[i].data.instr, actual_repr, BUFFSIZE_LARGE
+		if (t == NULL) {
+			snprintf(
+				errmsg, maxwrite, "%s:%lu: token was NULL at line %lu.",
+				filepath, i + 1, i + 1
 			);
-		} else if (s->tokens[i].type == LABEL) {
-			strncpy(
-				actual_repr, s->tokens[i].data.label.text_repr, BUFFSIZE_LARGE
-			);
-		} else {
+
 			n2t_tokenseq_free(s);
 			fclose(expected);
+
+			return 1;
+		}
+
+		if (t->type == INSTR) {
+			n2t_instr_to_str(t->data.instr, actual_repr, BUFFSIZE_LARGE);
+		} else if (t->type == LABEL) {
+			snprintf(actual_repr, BUFFSIZE_LARGE, "(%s)", t->data.label.label);
+		} else {
 			snprintf(
 				errmsg, maxwrite,
-				"Error while translating token %lu: type %u not recognized.",
-				i, s->tokens[i].type
+				"%s:%lu: error while translating token %s:%lu: type %u not"\
+				" recognized.",
+				filepath, i + 1, exp_repr, i + 1, t->type
 			);
+
+			n2t_tokenseq_free(s);
+			fclose(expected);
 
 			return 1;
 		}
 
 		if (strncmp(exp_repr, actual_repr, BUFFSIZE_LARGE)) {
-			n2t_tokenseq_free(s);
-			fclose(expected);
-
 			snprintf(
 				errmsg, maxwrite,
 				"%s:%lu: `%s' was expected, but `%s' was produced.", filepath,
 				i + 1, exp_repr, actual_repr
 			);
+
+			n2t_tokenseq_free(s);
+			fclose(expected);
 
 			return 1;
 		}
@@ -354,8 +367,8 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 	if (i != s->next) {
 		snprintf(
 			errmsg, maxwrite,
-			"%s: the number of tokens expected (%lu) differs from the actual one (%lu).\n",
-			filepath, i, s->next
+			"%s: the number of tokens expected (%lu) differs from the actual"\
+			" one (%u).\n", filepath, i, s->next
 		);
 
 		return 1;
@@ -370,25 +383,26 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 
 //memcache.h
 int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite) {
-	size_t nmemb = 10, membsize = 11, i;
+	size_t nmemb = 3E3, membsize = 20, i;
 	memcache_t *c = n2t_memcache_alloc(nmemb, membsize);
-	void *fetch;
+	void *e;
 	char const *source[] = {
 		"aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc", "dddddddddd", "eeeeeeeeee",
 		"ffffffffff", "gggggggggg", "hhhhhhhhhh", "iiiiiiiiii", "jjjjjjjjjj"
 	};
+	size_t const strsize = 11, sourcesize = 10;
 
 	for (i = 0; i < nmemb; i++) {
-		n2t_memcache_store(c, source[i], strlen(source[i]) + 1);
+		n2t_memcache_store(c, source[i % sourcesize], strsize);
 	}
 
 	for (i = 0; i < nmemb; i++) {
-		fetch = n2t_memcache_fetch(c, source[i], membsize);
+		e = n2t_memcache_fetch(c, source[i % sourcesize], strsize);
 
-		if (memcmp(source[i], fetch, membsize)) {
+		if (memcmp(source[i % sourcesize], e, strsize)) {
 			snprintf(
-				errmsg, maxwrite, "`%s' didn't match with `%s'.", source[i],
-				(char*) fetch
+				errmsg, maxwrite, "`%s' didn't match with `%s'.",
+				source[i % sourcesize], (char*) e
 			);
 
 			return 1;
@@ -405,7 +419,7 @@ int test_n2t_memcache_index_fetch(
 ) {
 	size_t nmemb = 3000, membsize = sizeof(int64_t), i;
 	memcache_t *c = n2t_memcache_alloc(nmemb, membsize);
-	int64_t temp = 2;
+	int64_t temp = 0;
 	void *e;
 
 	for (i = 0; i < nmemb; i++) {
@@ -424,7 +438,7 @@ int test_n2t_memcache_index_fetch(
 		return 1;
 	}
 
-	temp = 2;
+	temp = 0;
 	for (i = 0; i < c->next; i++) {
 		e = n2t_memcache_index_fetch(c, i);
 
@@ -445,7 +459,9 @@ int test_n2t_memcache_index_fetch(
 	return 0;
 }
 
-int test_n2t_memcache_extend(void *const args, char errmsg[], size_t maxwrite) {
+int test_n2t_memcache_extend(
+	void *const args, char errmsg[], size_t maxwrite
+) {
 	size_t nmemb = 1000, membsize = 1, last;
 	int8_t const check = 0xFF;
 	int8_t *actual;
@@ -454,11 +470,11 @@ int test_n2t_memcache_extend(void *const args, char errmsg[], size_t maxwrite) {
 	for (last = c->length; last < nmemb; last++) {
 		// This might ensure no segmentation faults are caused.
 		memset(c->head + MEMCACHE_OFFSET(c, last - 1), check, membsize);
-		c = n2t_memcache_extend(c, 1);
+		n2t_memcache_extend(c, 1);
 
 		if (c->length != last + 1) {
 			snprintf(
-				errmsg, maxwrite, "`c->length' = %lu, but %lu was expected.",
+				errmsg, maxwrite, "`c->length' = %u, but %lu was expected.",
 				c->length, last + 1
 			);
 
