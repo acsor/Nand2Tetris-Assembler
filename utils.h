@@ -19,9 +19,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
 #ifndef UTILS_H
 #define UTILS_H
+
+#include <stdlib.h>
+#include <stdarg.h>
 
 
 #define	BUFFSIZE_MICRO 16
@@ -37,6 +39,15 @@
 #define	IS_SPACE(c)	(c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\v')
 
 
+/**
+ * Joins `n' `char*' arguments to `dest', writing at most `maxwrite' bytes of
+ * data.
+ *
+ * Returns: `-1' if an error occurs, the number of characters written to `dest'
+ * otherwise. No error is reported if `maxwrite' is exceeded, but its value
+ * returned.
+ */
+int n2t_join(char *dest, size_t const maxwrite, size_t n, ...);
 /**
  * Replaces any of the characters in `old' from `source' with `new', storing
  * the result on to `dest'.
@@ -85,6 +96,12 @@ int n2t_is_whitespace(char const *s);
  * othewrise.
  */
 int n2t_composed_of(char const *s, char const *set);
+
+/**
+ * Returns: the file name portion of a file path encoded in `filepath'. The
+ * primitives limits to just considering slash characters.
+ */
+char* n2t_filename(char *const filepath);
 
 
 #endif

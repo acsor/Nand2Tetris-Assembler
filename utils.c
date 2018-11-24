@@ -24,6 +24,26 @@
 #include <string.h>
 
 
+int n2t_join(char *dest, size_t const maxwrite, size_t n, ...) {
+	va_list ap;
+	size_t written_to = 0;
+	char *s;
+
+	dest[0] = '\0';
+
+	va_start(ap, n);
+	while (n > 0 && written_to < maxwrite) {
+		s = va_arg(ap, char*);
+		strncat(dest, s, maxwrite - written_to);
+
+		written_to = MIN(maxwrite, written_to + strlen(s) + 1);
+		n--;
+	}
+	va_end(ap);
+
+	return written_to;
+}
+
 int n2t_replace_any(
 	char const *source, char const *old, char new, char *dest
 ) {
@@ -118,4 +138,14 @@ int n2t_is_alpha(char const *source, char const *extra) {
 
 int	n2t_is_numeric(char const *source) {
 	return n2t_composed_of(source, "0123456789");
+}
+
+
+char* n2t_filename(char *const filepath) {
+	char *const o = rindex(filepath, '/');
+
+	if (o)
+		return o + 1;
+	else
+		return filepath;
 }
