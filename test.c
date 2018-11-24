@@ -25,6 +25,7 @@
 #include <errno.h>
 
 #include "lexer.h"
+#include "parser.h"
 #include "utils.h"
 #include "memcache.h"
 
@@ -58,6 +59,15 @@ int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_memcache_index_fetch(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_memcache_extend(void *const args, char errmsg[], size_t maxwrite);
 
+// assembler.c
+/**
+ * Param `args': a `*char[]' pointer having:
+ * 	- The filepath to an `.asm' file to be read in as first element.
+ * 	- The filepath to an `.hack' file to be checked with as a second element.
+ */
+int test_assembler(void *const args, char errmsg[], size_t maxwrite);
+int test_assembler_batch(void *const args, char errmsg[], size_t maxwrite);
+
 
 typedef int (*test_function)(void*, char[], size_t);
 
@@ -70,7 +80,9 @@ int main (int argc, char *argv[]) {
 		test_n2t_instr_to_bitstr, test_batch_back_translation,
 
 		test_n2t_memcache_fetch, test_n2t_memcache_extend,
-		test_n2t_memcache_index_fetch
+		test_n2t_memcache_index_fetch,
+
+		test_assembler_batch
 	};
 	char *test_names[] = {
 		"test_n2t_strip", "test_n2t_composed_of", "test_n2t_decomment",
@@ -79,7 +91,9 @@ int main (int argc, char *argv[]) {
 		"test_n2t_instr_to_bitstr", "test_batch_back_translation",
 
 		"test_n2t_memcache_fetch", "test_n2t_memcache_extend",
-		"test_n2t_memcache_index_fetch"
+		"test_n2t_memcache_index_fetch",
+
+		"test_assembler_batch"
 	};
 	char errmsg[BUFFSIZE_VLARGE];
 	size_t const tests_no = sizeof(tests) / sizeof(test_function);
@@ -280,7 +294,7 @@ int test_batch_back_translation(
 	char test_dir[BUFFSIZE_LARGE], filepath[BUFFSIZE_LARGE];
 	size_t i;
 
-	n2t_join(test_dir, BUFFSIZE_LARGE, 2, BUFFSIZE_LARGE,
+	n2t_join(test_dir, BUFFSIZE_LARGE, 2, TEST_DIR_ROOT,
 		"test_batch_back_translation/");
 
 	for (i = 0; i < sizeof(filenames) / sizeof(char*); i++) {
@@ -496,6 +510,125 @@ int test_n2t_memcache_extend(
 	}
 
 	n2t_memcache_free(c);
+
+	return 0;
+}
+
+
+// assembler.c
+int test_assembler_batch(void *const args, char errmsg[], size_t maxwrite) {
+	char *filenames[] = {
+		"Add.asm", "Max.asm", "MaxL.asm", "Pong.asm", "PongL.asm", "Rect.asm",
+		"RectL.asm"
+	};
+	char
+		test_dir[BUFFSIZE_LARGE],
+		filepath[BUFFSIZE_LARGE], hack_filepath[BUFFSIZE_LARGE],
+		*subcall_args[2];
+	size_t filenames_no = sizeof(filenames) / sizeof(char*);
+	size_t i;
+
+	n2t_join(
+		test_dir, BUFFSIZE_LARGE, 2, TEST_DIR_ROOT, "test_assembler_batch/"
+	);
+
+	for (i = 0; i < filenames_no; i++) {
+		n2t_join(filepath, BUFFSIZE_LARGE, 2, test_dir, filenames[i]);
+		n2t_join(hack_filepath, BUFFSIZE_LARGE, 2, test_dir, filenames[i]);
+
+		*index(hack_filepath, '.') = '\0';
+		strcat(hack_filepath, ".hack");
+
+		subcall_args[0] = filepath;
+		subcall_args[1] = hack_filepath;
+
+		if (test_assembler(subcall_args, errmsg, maxwrite))
+			return 1;
+	}
+
+	return 0;
+}
+
+int test_assembler(void *const args, char errmsg[], size_t maxwrite) {
+	char **argv = args;
+	char
+		exp[BITSTR_BUFFSIZE + 2], actual[BITSTR_BUFFSIZE + 1],
+		instr_repr[BUFFSIZE_MED];
+	tokenseq_t *s;
+	token_t *t;
+
+	FILE *exp_stream;
+	size_t i, actual_lineno = 0, exp_lineno = 0;
+
+	if ((s = n2t_parse(argv[0])) == NULL) {
+		snprintf(errmsg, maxwrite, "Could not parse `%s'.", argv[0]);
+
+		return 1;
+	}
+
+	if ((exp_stream = fopen(argv[1], "rt")) == NULL) {
+		snprintf(errmsg, maxwrite, "Could not open `%s'.", argv[1]);
+		n2t_tokenseq_free(s);
+
+		return 1;
+	}
+
+	for (i = 0; i < s->next; i++) {
+		t = n2t_tokenseq_index_get(s, i);
+
+		if (t->type == INSTR) {
+			// `BITSTR_BUFFSIZE + 1' is due to the newline.
+			fgets(exp, BITSTR_BUFFSIZE + 1, exp_stream);
+			n2t_strip(exp, exp);
+			n2t_instr_to_bitstr(t->data.instr, actual);
+
+			actual_lineno++;
+			exp_lineno++;
+		} else if (t->type == LABEL) {
+			continue;
+		} else {
+			snprintf(
+				errmsg, maxwrite, "No known instrucion type `%u'. Quitting.",
+				t->type
+			);
+			fclose(exp_stream);
+			n2t_tokenseq_free(s);
+
+			return 1;
+		}
+
+		if (strncmp(actual, exp, BITSTR_BUFFSIZE)) {
+			n2t_instr_to_str(t->data.instr, instr_repr, BUFFSIZE_MED);
+			snprintf(
+				errmsg, maxwrite, "%s:%lu: wrong bitstring output: expected"
+				" `%s', got `%s'. Alleged instruction: `%s'.", argv[1],
+				actual_lineno, exp, actual, instr_repr
+			);
+
+			fclose(exp_stream);
+			n2t_tokenseq_free(s);
+
+			return 1;
+		}
+	}
+
+	while (fgets(exp, BITSTR_BUFFSIZE, exp_stream))
+		exp_lineno++;
+
+	if (exp_lineno != actual_lineno) {
+		snprintf(
+			errmsg, maxwrite, "%s: %lu machine language lines were expected,"
+			" but %lu produced.", argv[1], exp_lineno, actual_lineno
+		);
+
+		fclose(exp_stream);
+		n2t_tokenseq_free(s);
+
+		return 1;
+	}
+
+	fclose(exp_stream);
+	n2t_tokenseq_free(s);
 
 	return 0;
 }

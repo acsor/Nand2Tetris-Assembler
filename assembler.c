@@ -19,15 +19,16 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
 #include <stdio.h>
 #include <string.h>
 #include "lexer.h"
+#include "parser.h"
 
 
 int main (int argc, char *argv[]) {
 	tokenseq_t *s;
-	char buff[BUFFSIZE_MED];
+	char buff[BITSTR_BUFFSIZE];
+	token_t *t;
 	size_t i;
 
 	if (argc < 2) {
@@ -35,16 +36,30 @@ int main (int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	s = n2t_tokenize(argv[1]);
+	if ((s = n2t_parse(argv[1])) == NULL) {
+		fprintf(
+			stderr, "%s: `%s' is an invalid `.asm' file.\n", argv[0], argv[1]
+		);
+		return EXIT_FAILURE;
+	}
 
 	for (i = 0; i < s->next; i++) {
-		if (s->tokens[i].type == INSTR) {
-			n2t_instr_to_str(s->tokens[i].data.instr, buff);
-			puts(buff);
-			buff[0] = '\0';
-		} else if (s->tokens[i].type == LABEL) {
-			puts(s->tokens[i].data.label.text_repr);
+		t = n2t_tokenseq_index_get(s, i);
+
+		if (t->type == INSTR) {
+			n2t_instr_to_bitstr(t->data.instr, buff);
+		} else if (t->type == LABEL) {
+			continue;
+		} else {
+			fprintf(
+				stderr, "No known instrucion type %u. Quitting\n", t->type
+			);
+			n2t_tokenseq_free(s);
+
+			return EXIT_FAILURE;
 		}
+
+		puts(buff);
 	}
 
 	n2t_tokenseq_free(s);

@@ -27,10 +27,10 @@ flags=-Wall
 all: assembler test.out scratch.out
 
 
-assembler: assembler.c lexer.o utils.o
+assembler: assembler.c lexer.o parser.o utils.o memcache.o
 	$(cc) $(flags) -o assembler $^
 
-test.out: test.c lexer.o utils.o memcache.o
+test.out: test.c lexer.o parser.o utils.o memcache.o
 	$(cc) $(flags) -o test.out $^
 
 parser.o: parser.c parser.h
