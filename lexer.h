@@ -169,6 +169,7 @@ typedef struct {
  * `0' otherwise.
  */
 int n2t_str_to_instr(char const *str_repr, instr_t *dest);
+#define	BITSTR_BUFFSIZE 17
 /**
  * Converts an instruction `in' in its bit string representation.
  *
@@ -177,7 +178,7 @@ int n2t_str_to_instr(char const *str_repr, instr_t *dest);
  * Returns: the total number of characters written to `dest', `-1' if an error
  * occurred.
  */
-int n2t_instr_to_bitstr(instr_t const in, char *const dest);
+int n2t_instr_to_bitstr(instr_t in, char *const dest);
 /**
  * Converts an instruction `in' in its string representation.
  *

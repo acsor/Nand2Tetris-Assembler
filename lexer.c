@@ -101,9 +101,8 @@ static word_t n2t_parse_Cinstr_comp(char const *norm_repr);
 int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
 	char normalized[strlen(str_repr) + 1];
 
-	if (n2t_strip(str_repr, normalized)) {
+	if (n2t_strip(str_repr, normalized))
 		return 1;
-	}
 
 	if (normalized[0] == '@') {
 		dest->type = A;
@@ -114,7 +113,7 @@ int n2t_str_to_instr(char const *str_repr, instr_t *dest) {
 	}
 }
 
-int n2t_instr_to_bitstr(instr_t const in, char *const dest) {
+int n2t_instr_to_bitstr(instr_t in, char *const dest) {
 	word_t bitmask = 1 << 15,
 		   i = 0;
 	word_t const bits =
@@ -148,30 +147,17 @@ int n2t_str_to_Ainstr(char const *norm_repr, Ainstr_t *dest) {
 		return 1;	// Not an A-instruction.
 	}
 
-	if (n2t_is_numeric(norm_repr + 1) && norm_repr[1] != '0') {
+	if (n2t_is_numeric(norm_repr + 1)) {
 		// `[1-9]\d*' digits.
+		// TO-DO: even multi-digit figures beginning with `0' are allowed!
 		dest->memptr.location = atoi(norm_repr + 1);
 		dest->memptr.loaded = 1;
 		snprintf(
 			dest->memptr.label, BUFFSIZE_MED, "%u", dest->memptr.location
 		);
 		dest->memptr.type = RAM;
-	} else if (	// @R0, @R1, ..., @R15
-		// TO-DO The condition below allows values such as `@R01', `@R02',
-		// ..., `@R0X'. Fix it.
-		norm_repr[1] == 'R' && n2t_is_numeric(norm_repr + 2) &&\
-		atoi(norm_repr + 2) < 16
-	) {
-		dest->memptr.location = atoi(norm_repr + 2);
-		dest->memptr.loaded = 1;
-		snprintf(
-			dest->memptr.label, BUFFSIZE_MED, "R%u", dest->memptr.location
-		);
-		dest->memptr.type = RAM;
 	} else if (n2t_composed_of(norm_repr + 1, LABEL_CHARSET)) {
-		// @LABEL, @label, @...
-		// strncpy(dest->instr.a.label, norm_repr + 1, BUFFSIZE_MED);
-		// dest->instr.a.loaded = 0;
+		// @R0, @R1, ..., @SP, @THIS, ..., @LABEL, @label, @...
 		dest->memptr.loaded = 0;
 		strncpy(dest->memptr.label, norm_repr + 1, BUFFSIZE_MED);
 		dest->memptr.type = UNKNOWN;
@@ -289,7 +275,7 @@ int n2t_str_to_Cinstr(char const *const norm_repr, Cinstr_t *dest) {
 		return 2;
 	}
 
-	*dest |= (7 << 13);
+	*dest |= (0x7 << 13);
 
 	return 0;
 }
