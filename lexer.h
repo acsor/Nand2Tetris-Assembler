@@ -42,7 +42,7 @@
 #define	DEST_AMD 7
 
 #define	COMP_0 (32 + 8 + 2)
-#define	COMP_1 (63)
+#define	COMP_1 (32 + 16 + 8 + 2)
 #define	COMP_MINUS1 (32 + 16 + 8 + 2)
 #define	COMP_D (8 + 4)
 #define	COMP_A (32 + 16)
@@ -62,15 +62,16 @@
 #define	COMP_M (64 + 32 + 16)
 #define	COMP_NOTM (64 + 32 + 16 + 1)
 #define	COMP_MINUSM (64 + 32 + 16 + 2 + 1)
-#define	COMP_MPLUS1 (64 + 32 + 16 + 8 + 4 + 2)
+#define	COMP_MPLUS1 (64 + 32 + 16 + 4 + 2 + 1)
 #define	COMP_MMINUS1 (64 + 32 + 16 + 2)
-#define	COMP_DPLUSM (64 + 2)
+#define	COMP_DPLUSM (32 + 16 + 8 + 4 + 1)
 #define	COMP_DMINUSM (64 + 16 + 2 + 1)
-#define	COMP_MMINUSD (64 + 4 + 2 + 1)
-#define	COMP_DANDM (64)
+#define	COMP_MMINUSD (64 + 2)
+#define	COMP_DANDM (32 + 16 + 8 + 2 + 1)
 #define	COMP_DORM (64 + 16 + 4 + 1)
-// Used to signal errors on return values, e.g.
-#define COMP_ERROR (64 + 32 + 16 + 8 + 4 + 2 + 1)
+// Used to signal errors on return values et simila. It is 120, one greater
+// than the last valid code.
+#define COMP_ERROR (64 + 32 + 16 + 8)
 
 #define JUMP_NONE 0
 #define JUMP_GT 1
