@@ -19,15 +19,17 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
 #include "lexer.h"
 #include "utils.h"
 #include "memcache.h"
 
+
+#define	TEST_DIR_ROOT "test_fixtures/"
 
 // utils.h
 int test_n2t_strip(void *const args, char errmsg[], size_t maxwrite);
@@ -110,7 +112,7 @@ int main (int argc, char *argv[]) {
 
 //utils.h
 int test_n2t_strip(void *const args, char errmsg[], size_t maxwrite) {
-	char const *inputs[] = {
+	char *inputs[] = {
 		"abcdefghijkl", "           abcdefghijkl", "abcdefghijkl         ",
 		"     abcdefghijkl        ", "\tabcdefghijkl", "abcdefghijkl\t",
 		"\tabcdefghijkl\t", "\nabcdefghijkl", "abcdefghijkl\n",
@@ -275,17 +277,17 @@ int test_batch_back_translation(
 		"Add.asm", "Max.asm", "MaxL.asm", "Pong.asm", "PongL.asm", "Rect.asm",
 		"RectL.asm"
 	};
-	char const *test_dir = "test_fixtures/test_batch_back_translation/";
-	char filepath[BUFFSIZE_LARGE];
+	char test_dir[BUFFSIZE_LARGE], filepath[BUFFSIZE_LARGE];
 	size_t i;
 
-	for (i = 0; i < sizeof(filenames) / sizeof(char*); i++) {
-		strncpy(filepath, test_dir, BUFFSIZE_LARGE);
-		strncat(filepath, filenames[i], BUFFSIZE_LARGE - strlen(filepath));
+	n2t_join(test_dir, BUFFSIZE_LARGE, 2, BUFFSIZE_LARGE,
+		"test_batch_back_translation/");
 
-		if (test_back_translation(filepath, errmsg, maxwrite)) {
+	for (i = 0; i < sizeof(filenames) / sizeof(char*); i++) {
+		n2t_join(filepath, BUFFSIZE_LARGE, 2, test_dir, filenames[i]);
+
+		if (test_back_translation(filepath, errmsg, maxwrite))
 			return 1;
-		}
 	}
 
 	return 0;
@@ -381,7 +383,7 @@ int test_back_translation(void *const args, char errmsg[], size_t maxwrite) {
 }
 
 
-//memcache.h
+// memcache.h
 int test_n2t_memcache_fetch(void *const args, char errmsg[], size_t maxwrite) {
 	size_t nmemb = 3E3, membsize = 20, i;
 	memcache_t *c = n2t_memcache_alloc(nmemb, membsize);
