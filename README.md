@@ -19,7 +19,7 @@ This project provides an as much as possibly extend test suite. Compile it with
 
 ## Licensing
 Readers of this source code, especially students working to complete the
-assignment, should note that they are NOT allowed to own copies of this
-software **free of the copyright notice** of the source files.
+assignment, should note that they are NOT allowed to own entire or partial
+copies of this software **free of the copyright notice** of the source files.
 
 Refusing to do so makes you liable for copyright infringement.
