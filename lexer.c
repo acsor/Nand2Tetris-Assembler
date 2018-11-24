@@ -19,7 +19,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
 #include "lexer.h"
 #include "utils.h"
 #include <stdio.h>
@@ -465,6 +464,23 @@ token_t* n2t_tokenseq_index_get(tokenseq_t const *s, uint32_t index) {
 	return n2t_memcache_index_fetch(
 		s->tokens_multiton, s->tokens[index]
 	);
+}
+
+memloc_t* n2t_tokenseq_find_rom_label(tokenseq_t const *s, memloc_t mould) {
+	token_t *t;
+	size_t i;
+
+	for (i = 0; i < s->tokens_multiton->next; i++) {
+		t = n2t_memcache_index_fetch(s->tokens_multiton, i);
+
+		if (
+			t->type == LABEL &&
+			!strncmp(mould.label, t->data.label.label, BUFFSIZE_MED)
+		)
+			return &t->data.label;
+	}
+
+	return NULL;
 }
 
 tokenseq_t* n2t_tokenize(const char *filepath) {

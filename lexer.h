@@ -19,7 +19,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
 #ifndef LEXER_H
 #define	LEXER_H
 
@@ -121,7 +120,6 @@ typedef struct {
 	memloc_t memptr;
 } Ainstr_t;
 
-// TO-DO Turn `Cinstr_t' into a structure.
 typedef word_t Cinstr_t;
 
 // Unfortunately, I can't say how space-efficient such a solution can be.
@@ -236,7 +234,6 @@ int n2t_Cinstr_to_str(Cinstr_t const in, char *const dest, size_t maxwrite);
  *
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
-// TO-DO Test
 int n2t_set_dest(Cinstr_t *dest, word_t dest_reg);
 /**
  * Retrieves the destinationn register(s) of a C-instruction computation.
@@ -244,7 +241,6 @@ int n2t_set_dest(Cinstr_t *dest, word_t dest_reg);
  * Returns: `DEST_M', `DEST_D', `DEST_MD', `DEST_A', ..., comprising any
  * possible combination of the three register.
  */
-// TO-DO Test
 word_t n2t_get_dest(Cinstr_t const in);
 /**
  * Sets the comp condition of a C-instruction (to choose between any available
@@ -264,13 +260,11 @@ word_t n2t_get_comp(Cinstr_t const in);
  *
  * Returns: `1' if invalid arguments were supplied, `0' otherwise.
  */
-// TO-DO Test
 int n2t_set_jump(Cinstr_t *dest, word_t jump_cond);
 /**
  * Returns: `JUMP_NONE', `JUMP_GT', `JUMP_EQ', `JUMP_GE', ..., or any other
  * combination up to `JUMP_ALWAYS'.
  */
-// TO-DO Test
 word_t n2t_get_jump(Cinstr_t const in);
 
 
@@ -297,6 +291,11 @@ int n2t_tokenseq_cache_token(tokenseq_t *s, token_t const t);
  * within the token sequence.
  */
 token_t* n2t_tokenseq_index_get(tokenseq_t const *s, uint32_t index);
+/**
+ * Returns: the first `memloc_t' ROM label having the same label as `mould', or
+ * `NULL' if none is found. Other fields are not compared.
+ */
+memloc_t* n2t_tokenseq_find_rom_label(tokenseq_t const *s, memloc_t mould);
 /**
  * Comments and new lines are ignored.
  *
