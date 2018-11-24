@@ -33,6 +33,9 @@ assembler: assembler.c lexer.o utils.o
 test.out: test.c lexer.o utils.o memcache.o
 	$(cc) $(flags) -o test.out $^
 
+parser.o: parser.c parser.h
+	$(cc) $(flags) -c $^
+
 # TO-DO `*.h' files should not be included in compilation.
 lexer.o: lexer.c lexer.h
 	$(cc) $(flags) -c $^
