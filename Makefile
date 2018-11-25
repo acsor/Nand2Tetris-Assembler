@@ -24,7 +24,7 @@ flags=-Wall
 
 
 .PHONY:	clear
-all: assembler test.out scratch.out
+all: assembler test.out
 
 
 assembler: assembler.c lexer.o parser.o utils.o memcache.o
@@ -34,17 +34,16 @@ test.out: test.c lexer.o parser.o utils.o memcache.o
 	$(cc) $(flags) -o test.out $^
 
 parser.o: parser.c parser.h
-	$(cc) $(flags) -c $^
+	$(cc) $(flags) -c $(filter %.c, $^)
 
-# TO-DO `*.h' files should not be included in compilation.
 lexer.o: lexer.c lexer.h
-	$(cc) $(flags) -c $^
+	$(cc) $(flags) -c $(filter %.c, $^)
 
 utils.o: utils.c utils.h
-	$(cc) $(flags) -c $^
+	$(cc) $(flags) -c $(filter %.c, $^)
 
 memcache.o: memcache.c memcache.h
-	$(cc) $(flags) -c $^
+	$(cc) $(flags) -c $(filter %.c, $^)
 
 
 clear:
