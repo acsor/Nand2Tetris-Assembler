@@ -84,7 +84,7 @@ static int n2t_parse_rom_labels(tokenseq_t *s) {
 		if (t->type == LABEL && !t->data.label.loaded) {
 			t->data.label.location = instrcounter;
 			t->data.label.loaded = 1;
-		} else {
+		} else if (t->type == INSTR) {
 			instrcounter++;
 		}
 	}
