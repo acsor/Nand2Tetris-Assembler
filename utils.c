@@ -139,6 +139,21 @@ int	n2t_is_numeric(char const *source) {
 	return n2t_composed_of(source, "0123456789");
 }
 
+int n2t_ends_with(char const *s, char const *end) {
+	size_t const slen = strlen(s), endlen = strlen(end);
+	size_t i;
+
+	if (s == NULL || end == NULL || endlen > slen)
+		return 0;
+
+	for (i = 0; i < endlen; i++) {
+		if (s[slen - i - 1] != end[endlen - i - 1])
+			return 0;
+	}
+
+	return 1;
+}
+
 
 char* n2t_filename(char *const filepath) {
 	char *const o = rindex(filepath, '/');

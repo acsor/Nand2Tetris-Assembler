@@ -97,6 +97,10 @@ int n2t_is_whitespace(char const *s);
  * othewrise.
  */
 int n2t_composed_of(char const *s, char const *set);
+/**
+ * Returns: `1' if `s' is terminated by `end', `0' otherwise.
+ */
+int n2t_ends_with(char const *s, char const *end);
 
 /**
  * Returns: the file name portion of a file path encoded in `filepath'. The

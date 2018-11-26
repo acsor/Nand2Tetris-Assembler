@@ -38,6 +38,7 @@ int test_n2t_composed_of(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_decomment(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_replace_any(void *const args, char errmsg[], size_t maxwrite);
 int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite);
+int test_n2t_ends_with(void *const args, char errmsg[], size_t maxwrite);
 
 // lexer.h
 int test_n2t_instr_to_bitstr(void *const args, char errmsg[], size_t maxwrite);
@@ -75,7 +76,7 @@ typedef int (*test_function)(void*, char[], size_t);
 int main (int argc, char *argv[]) {
 	test_function tests[] = {
 		test_n2t_strip, test_n2t_composed_of, test_n2t_decomment,
-		test_n2t_replace_any, test_n2t_collapse_any,
+		test_n2t_replace_any, test_n2t_collapse_any, test_n2t_ends_with,
 
 		test_n2t_instr_to_bitstr, test_batch_back_translation,
 
@@ -86,7 +87,7 @@ int main (int argc, char *argv[]) {
 	};
 	char *test_names[] = {
 		"test_n2t_strip", "test_n2t_composed_of", "test_n2t_decomment",
-		"test_n2t_replace_any", "test_n2t_collapse_any",
+		"test_n2t_replace_any", "test_n2t_collapse_any", "test_n2t_ends_with",
 
 		"test_n2t_instr_to_bitstr", "test_batch_back_translation",
 
@@ -238,6 +239,40 @@ int test_n2t_collapse_any(void *const args, char errmsg[], size_t maxwrite) {
 			snprintf(
 				errmsg, maxwrite, "Expected `%s', but got `%s'",
 				exp_outputs[i], buff
+			);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int test_n2t_ends_with(void *const args, char errmsg[], size_t maxwrite) {
+	char const *input = "abcdefghijklmnopqrstuvwxyz";
+	char buff[BUFFSIZE_SMALL];
+	size_t const len = strlen(input);
+	int i;	// I couldn't fathom why declaring `i' to size_t failed the test.
+
+	// All the strings in `input[i:]'
+	for (i = len; i >= 0; i--) {
+		if (n2t_ends_with(input, input + i) == 0) {
+			snprintf(
+				errmsg, maxwrite, "`%s' ends with `%s', but `n2t_ends_with()'"
+				" tells otherwise.", input, input + 1
+			);
+
+			return 1;
+		}
+	}
+
+	memset(buff, 0, BUFFSIZE_SMALL);
+	for (i = 1; i < len - 1; i++) {
+		strncpy(buff, input, MIN(i, BUFFSIZE_SMALL));
+
+		if (n2t_ends_with(input, buff)) {
+			snprintf(
+				errmsg, maxwrite, "`%s' does NOT end with `%s', but"
+				" `n2t_ends_with()' tells otherwise.", input, buff
 			);
 			return 1;
 		}
