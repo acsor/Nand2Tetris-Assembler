@@ -36,6 +36,7 @@
 #define ASCII_LETTERS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 #define	MIN(a, b)	(a < b ? a: b)
+#define IS_IN(c, s)	(index(s, c) != NULL)
 #define	IS_SPACE(c)	(c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\v')
 
 

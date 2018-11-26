@@ -156,7 +156,10 @@ int n2t_str_to_Ainstr(char const *norm_repr, Ainstr_t *dest) {
 			dest->memptr.label, BUFFSIZE_MED, "%u", dest->memptr.location
 		);
 		dest->memptr.type = RAM;
-	} else if (n2t_composed_of(norm_repr + 1, LABEL_CHARSET)) {
+	} else if (
+			!IS_IN(norm_repr[1], "0123456789") &&
+			n2t_composed_of(norm_repr + 1, LABEL_CHARSET)
+	) {
 		// @R0, @R1, ..., @SP, @THIS, ..., @LABEL, @label, @...
 		dest->memptr.loaded = 0;
 		strncpy(dest->memptr.label, norm_repr + 1, BUFFSIZE_MED);
