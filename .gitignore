@@ -7,3 +7,5 @@
 Session.vim
 scratch.*
 assembler
+pack.sh
+asm_samples/
