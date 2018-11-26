@@ -103,8 +103,9 @@ int n2t_composed_of(char const *s, char const *set);
 int n2t_ends_with(char const *s, char const *end);
 
 /**
- * Returns: the file name portion of a file path encoded in `filepath'. The
- * primitives limits to just considering slash characters.
+ * Returns: the file name portion of a file path encoded in `filepath' or the
+ * whole string otherwise. The utility limits to just considering slash
+ * characters.
  */
 char* n2t_filename(char *const filepath);
 

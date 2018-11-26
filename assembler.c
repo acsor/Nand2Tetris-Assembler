@@ -26,8 +26,9 @@
 
 
 int main (int argc, char *argv[]) {
+	FILE *output;
+	char output_path[BUFFSIZE_LARGE], buff[BITSTR_BUFFSIZE];
 	tokenseq_t *s;
-	char buff[BITSTR_BUFFSIZE];
 	token_t *t;
 	size_t i;
 
@@ -36,10 +37,32 @@ int main (int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	if (!n2t_ends_with(argv[1], ".asm")) {
+		fprintf(
+			stderr, "%s: `%s' does not have an `.asm' extension.\n", argv[0],
+			argv[1]
+		);
+		return EXIT_FAILURE;
+	}
+
+	strncpy(output_path, n2t_filename(argv[1]), BUFFSIZE_LARGE);
+	*index(output_path, '.') = '\0';
+	strncat(output_path, ".hack", BUFFSIZE_LARGE - strlen(output_path));
+
+	if ((output = fopen(output_path, "wt")) == NULL) {
+		fprintf(
+			stderr, "%s: could not open `%s' for writing. Exiting.\n", argv[0],
+			output_path
+		);
+		return EXIT_FAILURE;
+	}
+
 	if ((s = n2t_parse(argv[1])) == NULL) {
 		fprintf(
 			stderr, "%s: `%s' is an invalid `.asm' file.\n", argv[0], argv[1]
 		);
+		fclose(output);
+
 		return EXIT_FAILURE;
 	}
 
@@ -54,15 +77,17 @@ int main (int argc, char *argv[]) {
 			fprintf(
 				stderr, "No known instrucion type %u. Quitting\n", t->type
 			);
+			fclose(output);
 			n2t_tokenseq_free(s);
 
 			return EXIT_FAILURE;
 		}
 
-		puts(buff);
+		fprintf(output, "%s\n", buff);
 	}
 
 	n2t_tokenseq_free(s);
+	fclose(output);
 
 	return EXIT_SUCCESS;
 }
